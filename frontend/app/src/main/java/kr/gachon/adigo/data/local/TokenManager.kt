@@ -2,30 +2,38 @@ package kr.gachon.adigo.data.local
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
+import androidx.security.crypto.MasterKey
+import kr.gachon.adigo.data.model.LoginResponse
 
 class TokenManager(context: Context) {
     private val prefs = EncryptedSharedPreferences.create(
-        "secure_prefs",
-        MasterKey(context),
         context,
+        "jwt_prefs",
+        MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build(),
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 
     companion object {
         private const val JWT_KEY = "jwt_token"
+        private const val REFRESH_TOKEN_KEY = "refresh_token"
     }
 
-    fun saveToken(token: String) {
-        prefs.edit().putString(JWT_KEY, token).apply()
+    fun saveTokens(response: LoginResponse) {
+        prefs.edit().apply {
+            putString(JWT_KEY, response.jwtToken)
+            putString(REFRESH_TOKEN_KEY, response.refreshToken)
+            apply()
+        }
     }
 
-    fun getToken(): String? {
-        return prefs.getString(JWT_KEY, null)
-    }
+    fun getJwtToken(): String? = prefs.getString(JWT_KEY, null)
 
-    fun clearToken() {
-        prefs.edit().remove(JWT_KEY).apply()
+    fun getRefreshToken(): String? = prefs.getString(REFRESH_TOKEN_KEY, null)
+
+    fun clearTokens() {
+        prefs.edit().clear().apply()
     }
 }
