@@ -1,11 +1,13 @@
-import datetime
+from datetime import datetime, timedelta, timezone;
 from typing import Optional
 import jwt
 from passlib.context import CryptContext
 from app.repository.users import *
+from starlette.config import Config
 
 # JWT 관련 설정 (실제 서비스에서는 SECRET_KEY를 안전하게 관리하세요)
-SECRET_KEY = "your_secret_key_here"
+config = Config('.env')
+SECRET_KEY = config('SECRET_KEY')
 ALGORITHM = "HS256"
 
 # 비밀번호 암호화 및 검증용 컨텍스트
@@ -34,16 +36,17 @@ def authenticate_user(db: Session,username: str, password: str):
         return None
     return user
 
-def create_access_token(data: dict, expires_delta: Optional[datetime.timedelta] = None):
+def create_access_token(data: dict):
     """
     JWT 토큰 생성: payload에 사용자 정보를 담고 만료 시간 설정
-    """
+    """ 
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+
+    #만료시간 설정
+    expire = datetime.now(timezone.utc) + timedelta(int(config('ACCESS_TOKEN_EXPIRE_MINUTES')))
     to_encode.update({"exp": expire})
+
+    #토큰 암호화 및 반환
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
