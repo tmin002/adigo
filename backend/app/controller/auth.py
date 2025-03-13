@@ -7,8 +7,10 @@ from jwt import PyJWTError
 from app.model.token import Token
 from app.service.auth import *
 from app.repository.users import *
+from starlette.config import Config
 
 router = APIRouter()
+config = Config('.env')
 
 # OAuth2PasswordBearer: 클라이언트로부터 토큰을 받아오는 의존성
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
@@ -20,14 +22,14 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     - 클라이언트는 username과 password를 전송
     - 인증 성공 시 JWT 토큰을 반환
     """
+
+    #유저 객체 받기
     user = authenticate_user(db,form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     
-    access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    #토큰 받기 및 토큰 반환
+    access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -37,7 +39,7 @@ async def register(form_data: OAuth2PasswordRequestForm = Depends(), db: Session
     """
     회원가입 엔드포인트:
     - 클라이언트는 username과 password를 전송
-    - 사용자 생성 성공 시 사용자 정보 반환
+    - 사용자 생성 성공 시 사용자 정보 반환  
     """
     user = get_user_by_username(db,form_data.username)
     if user:
