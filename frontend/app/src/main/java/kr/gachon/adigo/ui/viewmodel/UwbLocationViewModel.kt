@@ -1,27 +1,27 @@
 package kr.gachon.adigo.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import javax.inject.Inject
+import androidx.lifecycle.ViewModel
+import kr.gachon.adigo.service.UwbService
 
-@HiltViewModel
-class UwbLocationViewModel @Inject constructor() : ViewModel() {
 
-    private val _distance = MutableStateFlow(0f)
-    val distance: StateFlow<Float> = _distance.asStateFlow()
+class UwbLocationViewModel(private val uwbService: UwbService) : ViewModel() {
 
-    private val _angle = MutableStateFlow(0f)
-    val angle: StateFlow<Float> = _angle.asStateFlow()
+    val distance: StateFlow<Float> = uwbService.distance
+    val angle: StateFlow<Float> = uwbService.angle
 
-    fun updateLocation(distance: Float, angle: Float) {
-        viewModelScope.launch {
-            _distance.value = distance
-            _angle.value = angle
-        }
+    suspend fun startUwb(address: String, channel: Int) {
+        uwbService.startUwbRanging(address, channel)
+    }
+
+    fun modifyAngle() {
+        val randomAngle = Random.nextFloat() * 360f // 0 ~ 360 random angle
+        uwbService.modifyAngle(randomAngle)
+    }
+    fun modifyDistance() {
+        val randomDistance = Random.nextFloat() * 100f // 0 ~ 100 random distance
+        uwbService.modifyDistance(randomDistance)
     }
 }
