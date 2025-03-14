@@ -2,8 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp)     //hilt
-    alias(libs.plugins.hilt)    //hilt
 }
 
 
@@ -48,9 +46,7 @@ dependencies {
     implementation ("androidx.core.uwb:uwb:1.0.0-alpha08")
     implementation ("androidx.core.uwb:uwb-rxjava3:1.0.0-alpha08")
 
-    //hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.android.compiler)
+    implementation ("io.reactivex.rxjava3:rxjava:3.1.5")
 
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
 
