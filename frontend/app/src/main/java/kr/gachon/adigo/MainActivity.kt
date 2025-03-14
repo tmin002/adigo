@@ -18,21 +18,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.uwb.UwbAddress
-import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
+import kr.gachon.adigo.service.UwbService
 
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val uwbService = UwbService(this)
+        val viewModel = UwbLocationViewModel(uwbService)
+
         enableEdgeToEdge()
         setContent {
             AdigoTheme {
-                LoginView()
+                LoginView(viewModel)
             }
         }
     }
@@ -44,7 +45,7 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun LoginView() {
+fun LoginView(viewModel: UwbLocationViewModel) {
     var showUwbPopup by remember { mutableStateOf(false) }
 
     Column(
@@ -54,15 +55,16 @@ fun LoginView() {
     ) {
         LoginMiddleView()
         LoginBottomView(
-            onUwbButtonClick = { showUwbPopup = true }
+            onUwbButtonClick = { showUwbPopup = !showUwbPopup }
         )
     }
 
-    if (showUwbPopup) {
-        UwbPrecisionLocationPopup(
-            onDismissRequest = { showUwbPopup = false }
-        )
-    }
+    // 수정된 UwbPrecisionLocationPopup 호출
+    UwbPrecisionLocationPopup(
+        isVisible = showUwbPopup,
+        onDismissRequest = { showUwbPopup = false },
+        viewModel = viewModel
+    )
 }
 
 @Composable
@@ -87,43 +89,45 @@ fun LoginMiddleView() {
 
 @Composable
 fun LoginBottomView(onUwbButtonClick: () -> Unit) {
-    Button(
-        onClick = { /*TODO: 로그인*/ },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .padding(start = 20.dp, end = 20.dp),
-        elevation = ButtonDefaults.buttonElevation(2.dp),
-        shape = RoundedCornerShape(150.dp),
-        colors = ButtonDefaults.buttonColors(Color.Black)
-    ) {
-        Text(text = "로그인")
-    }
+    Column {
+        Button(
+            onClick = {  },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .padding(start = 20.dp, end = 20.dp),
+            elevation = ButtonDefaults.buttonElevation(2.dp),
+            shape = RoundedCornerShape(150.dp),
+            colors = ButtonDefaults.buttonColors(Color.Black)
+        ) {
+            Text(text = "로그인")
+        }
 
-    Button(
-        onClick = { /* TODO: 회원가입 */ },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .padding(start = 20.dp, end = 20.dp, top = 10.dp),
-        elevation = ButtonDefaults.buttonElevation(2.dp),
-        shape = RoundedCornerShape(150.dp),
-        colors = ButtonDefaults.buttonColors(Color.Black)
-    ) {
-        Text(text = "회원가입")
-    }
+        Button(
+            onClick = { /* TODO: 회원가입 */ },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp)
+                .padding(start = 20.dp, end = 20.dp, top = 10.dp),
+            elevation = ButtonDefaults.buttonElevation(2.dp),
+            shape = RoundedCornerShape(150.dp),
+            colors = ButtonDefaults.buttonColors(Color.Black)
+        ) {
+            Text(text = "회원가입")
+        }
 
-    // 새로 추가한 "정밀위치탐색" 버튼
-    Button(
-        onClick = onUwbButtonClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .padding(start = 20.dp, end = 20.dp, top = 10.dp),
-        elevation = ButtonDefaults.buttonElevation(2.dp),
-        shape = RoundedCornerShape(150.dp),
-        colors = ButtonDefaults.buttonColors(Color.Black)
-    ) {
-        Text(text = "정밀위치탐색")
+        // 정밀 위치 탐색 버튼 (onUwbButtonClick 호출)
+        Button(
+            onClick = onUwbButtonClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp)
+                .padding(start = 20.dp, end = 20.dp, top = 10.dp),
+            elevation = ButtonDefaults.buttonElevation(2.dp),
+            shape = RoundedCornerShape(150.dp),
+            colors = ButtonDefaults.buttonColors(Color.Black)
+        ) {
+            Text(text = "정밀위치탐색")
+        }
     }
 }
