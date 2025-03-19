@@ -1,7 +1,9 @@
 package kr.gachon.adigo.ui.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlin.random.Random
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.ViewModel
 import kr.gachon.adigo.service.UwbService
@@ -11,9 +13,19 @@ class UwbLocationViewModel(private val uwbService: UwbService) : ViewModel() {
 
     val distance: StateFlow<Float> = uwbService.distance
     val angle: StateFlow<Float> = uwbService.angle
+    //var myAddress: StateFlow<Float> = uwbService.myAddress;
 
-    suspend fun startUwb(address: String, channel: Int) {
-        uwbService.startUwbRanging(address, channel)
+    var isController by mutableStateOf(true)
+        private set
+
+    fun setControllerState(newState: Boolean) {
+        isController = newState
+    }
+
+
+
+    suspend fun startUwb(address: String, channel: String) {
+        uwbService.startUwbRanging(address, channel, isController)
     }
 
     fun modifyAngle() {

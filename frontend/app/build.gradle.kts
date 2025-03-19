@@ -43,6 +43,21 @@ android {
 
 dependencies {
 
+    val navversion = "2.8.9"
+
+    // Jetpack Compose integration
+    implementation("androidx.navigation:navigation-compose:$navversion")
+
+    // Views/Fragments integration
+    implementation("androidx.navigation:navigation-fragment:$navversion")
+    implementation("androidx.navigation:navigation-ui:$navversion")
+
+    // Feature module support for Fragments
+    implementation("androidx.navigation:navigation-dynamic-features-fragment:$navversion")
+
+    // Testing Navigation
+    androidTestImplementation("androidx.navigation:navigation-testing:$navversion")
+
     implementation ("androidx.core.uwb:uwb:1.0.0-alpha08")
     implementation ("androidx.core.uwb:uwb-rxjava3:1.0.0-alpha08")
 
