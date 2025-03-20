@@ -10,5 +10,7 @@ class AdigoApplication : Application() {
         super.onCreate()
         tokenManager = TokenManager(this)
 
+
+
     }
 }
