@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import kotlinx.coroutines.launch
 import kr.gachon.adigo.R
 import kr.gachon.adigo.service.UwbService
 import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
@@ -33,6 +33,9 @@ fun UwbPrecisionLocationPopup(
     viewModel: UwbLocationViewModel
 
 ) {
+
+
+    val coroutineScope = rememberCoroutineScope()
 
     var address by remember { mutableStateOf("") }
     var channel by remember { mutableStateOf("") }
@@ -73,7 +76,6 @@ fun UwbPrecisionLocationPopup(
     )
 
     Box(
-        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter // 화면 상단에 배치
     ) {
         AnimatedVisibility(
@@ -93,9 +95,6 @@ fun UwbPrecisionLocationPopup(
                 elevation = CardDefaults.cardElevation(8.dp)
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Row(
@@ -103,21 +102,51 @@ fun UwbPrecisionLocationPopup(
                         horizontalArrangement = Arrangement.Center
                     ){
                         DirectionArrow(angle) // 왼쪽 화살표
-                        //Spacer(modifier = Modifier.width(1.dp))
+
                         DistanceMeter(distance)
 
-                        Button(
-                            onClick = {
-                                viewModel.modifyAngle()
-                                viewModel.modifyDistance()
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White
-                            ),
-                            modifier = Modifier.weight(1f),
-                            border = BorderStroke(1.dp, Color.Red)
-                        ) {
-                            Text("확인")
+                        Column ()
+                        {
+
+                            Row(){
+
+                                Column {
+
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                viewModel.startUwb(address,channel)
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Red
+                                        ),
+                                        border = BorderStroke(1.dp, Color.Red)
+                                    ) {
+                                        Text("확인")
+                                    }
+
+                                    ControllerSwitch(viewModel)
+
+
+
+                                }
+
+                                Column {
+
+                                    TextField(
+                                        value = address,
+                                        onValueChange = { address = it }
+                                    )
+
+                                    TextField(
+                                        value = channel,
+                                        onValueChange = { channel = it }
+                                    )
+
+                                }
+                            }
+
                         }
 
 
@@ -125,54 +154,26 @@ fun UwbPrecisionLocationPopup(
                     }
 
 
-                    Spacer(modifier = Modifier.height(8.dp))
 
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        BasicTextField(
-                            value = address,
-                            onValueChange = { address = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            decorationBox = { innerTextField ->
-                                Box(modifier = Modifier.padding(8.dp)) { innerTextField() }
-                            }
-                        )
-
-                        BasicTextField(
-                            value = channel,
-                            onValueChange = { channel = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            decorationBox = { innerTextField ->
-                                Box(modifier = Modifier.padding(8.dp)) { innerTextField() }
-                            }
-                        )
-
-                        Button(
-                            onClick = {
-                                viewModel.modifyAngle()
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White
-                            ),
-                            modifier = Modifier.weight(1f),
-                            border = BorderStroke(1.dp, Color.Red)
-                        ) {
-                            Text("확인")
-                        }
-
-
-
-
-                        }
                     }
+
+
 
                 }
             }
         }
     }
+
+
+
+@Composable
+fun ControllerSwitch(viewModel: UwbLocationViewModel ) {
+
+    Switch(
+        checked = viewModel.isController,
+        onCheckedChange = viewModel::setControllerState
+    )
+}
 
 
 @Composable
