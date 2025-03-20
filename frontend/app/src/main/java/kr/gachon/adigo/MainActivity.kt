@@ -1,6 +1,8 @@
 package kr.gachon.adigo
 
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.Manifest;
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,17 +20,43 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 import kr.gachon.adigo.service.UwbService
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        private const val UWB_PERMISSION_REQUEST_CODE = 123
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+
         val uwbService = UwbService(this)
         val viewModel = UwbLocationViewModel(uwbService)
+
+
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.UWB_RANGING
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // (2) 권한이 허용 안 되어 있으면, 요청
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.UWB_RANGING),
+                UWB_PERMISSION_REQUEST_CODE
+            )
+        } else {
+
+        }
+
+
 
         enableEdgeToEdge()
         setContent {
