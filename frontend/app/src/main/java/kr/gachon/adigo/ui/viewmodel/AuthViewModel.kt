@@ -15,15 +15,7 @@ class AuthViewModel(
 
     fun login(username: String, password: String) {
         viewModelScope.launch {
-            val response = remoteDataSource.login(username, password)
-            if (response.isSuccessful) {
-                val body: LoginResponse? = response.body()
-                body?.let { loginResponse ->
-                    tokenManager.saveTokens(loginResponse)
-                }
-            } else {
-                // 에러 처리
-            }
+
         }
     }
 }
