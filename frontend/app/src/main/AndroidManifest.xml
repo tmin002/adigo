@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.UWB_RANGING" />
     <uses-feature android:name="android.hardware.uwb" android:required="true" />
 
+    <!-- 인터넷 사용 권한 선언 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
 
 
     <application

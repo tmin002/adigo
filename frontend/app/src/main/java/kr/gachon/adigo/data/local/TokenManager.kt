@@ -21,9 +21,9 @@ class TokenManager(context: Context) {
         private const val REFRESH_TOKEN_KEY = "refresh_token"
     }
 
-    fun saveTokens(response: LoginResponse) {
+    fun saveTokens(response: LoginResponse.Response) {
         prefs.edit().apply {
-            putString(JWT_KEY, response.jwtToken)
+            putString(JWT_KEY, response.accessToken)
             putString(REFRESH_TOKEN_KEY, response.refreshToken)
             apply()
         }
