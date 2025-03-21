@@ -1,161 +1,100 @@
 package kr.gachon.adigo
 
-import android.content.pm.PackageManager
 import android.os.Bundle
-import android.Manifest;
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
+import kr.gachon.adigo.data.local.TokenManager
+import kr.gachon.adigo.data.remote.RemoteDataSource
+import kr.gachon.adigo.data.remote.httpClient
 import kr.gachon.adigo.ui.theme.AdigoTheme
-import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
-import kr.gachon.adigo.service.UwbService
+import kr.gachon.adigo.ui.viewmodel.ContentViewModel
 
 class MainActivity : ComponentActivity() {
 
-    companion object {
-        private const val UWB_PERMISSION_REQUEST_CODE = 123
-    }
+    // 1) Activity가 소유하는 ViewModel 인스턴스
+    private lateinit var viewModel: ContentViewModel
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
-        val uwbService = UwbService(this)
-        val viewModel = UwbLocationViewModel(uwbService)
-
-
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.UWB_RANGING
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // (2) 권한이 허용 안 되어 있으면, 요청
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.UWB_RANGING),
-                UWB_PERMISSION_REQUEST_CODE
-            )
-        } else {
-
-        }
-
-
-
         enableEdgeToEdge()
+
+        // 2) 수동 DI: TokenManager 생성
+        val tokenManager = TokenManager(this)
+
+        //3) 수동 DI : RemoteDataSource 생성
+        val remoteDataSource = httpClient.create(tokenManager)
+
+        // 3) ViewModel 생성 시점에 주입
+        viewModel = ContentViewModel(remoteDataSource, tokenManager)
+
+        // 4) setContent에서 Compose UI 호출
         setContent {
             AdigoTheme {
-                LoginView(viewModel)
+                // LoginMain에 viewModel을 넘겨준다
+                LoginMain(viewModel)
             }
         }
     }
-}
 
 
+    @Composable
+    fun LoginMain(viewModel: ContentViewModel) {
+        // 예시로 간단한 UI
+        var email by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
 
-
-
-
-@Composable
-fun LoginView(viewModel: UwbLocationViewModel) {
-    var showUwbPopup by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        LoginMiddleView()
-        LoginBottomView(
-            onUwbButtonClick = { showUwbPopup = !showUwbPopup }
-        )
-    }
-
-    // 수정된 UwbPrecisionLocationPopup 호출
-    UwbPrecisionLocationPopup(
-        isVisible = showUwbPopup,
-        onDismissRequest = { showUwbPopup = false },
-        viewModel = viewModel
-    )
-}
-
-@Composable
-fun LoginMiddleView() {
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.icon),
-            contentDescription = "Middle Logo",
-            modifier = Modifier.size(300.dp)
-        )
-
-        Text(
-            text = "어디고",
-            fontFamily = FontFamily.Monospace,
-            fontSize = 50.sp
-        )
-    }
-}
-
-@Composable
-fun LoginBottomView(onUwbButtonClick: () -> Unit) {
-    Column {
-        Button(
-            onClick = {  },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .padding(start = 20.dp, end = 20.dp),
-            elevation = ButtonDefaults.buttonElevation(2.dp),
-            shape = RoundedCornerShape(150.dp),
-            colors = ButtonDefaults.buttonColors(Color.Black)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "로그인")
-        }
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") }
+            )
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                viewModel.sendLogin (email, password,
+                    onSuccess = {
+                    // 로그인 성공 시 처리
+                    // 예: 다음 화면으로 이동, 토큰 저장 여부 확인 등
+                },
+                    onError = { errorMsg ->
 
-        Button(
-            onClick = { /* TODO: 회원가입 */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(70.dp)
-                .padding(start = 20.dp, end = 20.dp, top = 10.dp),
-            elevation = ButtonDefaults.buttonElevation(2.dp),
-            shape = RoundedCornerShape(150.dp),
-            colors = ButtonDefaults.buttonColors(Color.Black)
-        ) {
-            Text(text = "회원가입")
-        }
-
-        // 정밀 위치 탐색 버튼 (onUwbButtonClick 호출)
-        Button(
-            onClick = onUwbButtonClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(70.dp)
-                .padding(start = 20.dp, end = 20.dp, top = 10.dp),
-            elevation = ButtonDefaults.buttonElevation(2.dp),
-            shape = RoundedCornerShape(150.dp),
-            colors = ButtonDefaults.buttonColors(Color.Black)
-        ) {
-            Text(text = "정밀위치탐색")
+                    })
+            }) {
+                Text("Login")
+            }
         }
     }
+
+    @Preview()
+    @Composable
+    fun ContentViewPreview() {
+        MainActivity()
+    }
+
 }
