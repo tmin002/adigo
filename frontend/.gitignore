@@ -1,15 +1,35 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# ------------------------
+#  OS / 에디터 임시파일
+# ------------------------
 .DS_Store
-/build
+
+# ------------------------
+#  IDE / IntelliJ / Android Studio
+# ------------------------
+.idea/             # .idea 전체 폴더 무시
+*.iml              # IntelliJ 모듈 파일
+
+# 필요 시, .idea 내에서 공유할 폴더/파일만 예외처리(주석 해제 후 사용)
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/runConfigurations/
+
+# ------------------------
+#  Android / Gradle
+# ------------------------
+**/build/          # 모든 모듈(app 등) 내 build 폴더
+.gradle/
+local.properties   # 개인 환경(SDK 경로 등) 설정
+# gradle-wrapper.jar, gradlew, gradlew.bat 등은 일반적으로 커밋(프로젝트 재현성 보장)
+
+
+# /.idea/caches
+# /.idea/libraries
+# /.idea/modules.xml
+# /.idea/workspace.xml
+# /.idea/navEditor.xml
+# /.idea/assetWizardSettings.xml
+# /build
 /captures
 .externalNativeBuild
 .cxx
-local.properties
