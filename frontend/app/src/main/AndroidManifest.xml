@@ -34,6 +34,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:label="로그인" />
+
+        <activity
+            android:name=".SignUpActivity"
+            android:exported="false"
+            android:label="회원가입" />
+
     </application>
 
 </manifest>
