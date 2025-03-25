@@ -1,7 +1,16 @@
 package kr.gachon.adigo.data.model
 
 data class LoginResponse(
-    val jwtToken: String,
-    val refreshToken: String,
-    val expiresIn: Long? = null  // 토큰 만료시간 추가 (선택적)
-)
+    val status: Int,
+    val message: String,
+    val data: Response
+) {
+    data class Response(
+        val grantType: String,
+        val accessToken: String,
+        val refreshToken: String,
+        val tokenExpiresIn: String,
+        val refreshTokenExpiresIn: String
+    )
+}
+
