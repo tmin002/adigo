@@ -23,9 +23,28 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.ui.theme.AdigoTheme
 
+
 class MainActivity : ComponentActivity() {
+
+    // 1) Activity가 소유하는 ViewModel 인스턴스
+    private lateinit var viewModel: AuthViewModel
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        // 2) 수동 DI: TokenManager 생성
+        val tokenManager = TokenManager(this)
+
+        //3) 수동 DI : RemoteDataSource 생성
+        val remoteDataSource = httpClient.create(tokenManager)
+
+        // 3) ViewModel 생성 시점에 주입
+        viewModel = AuthViewModel(remoteDataSource, tokenManager)
+
+        // 4) setContent에서 Compose UI 호출
+      develop
         setContent {
             AdigoTheme {
                 MainScreen(
@@ -43,15 +62,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun MainScreen(
-    onSignInClick: () -> Unit,
-    onLoginClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+
+    @Composable
+    fun LoginMain(viewModel: AuthViewModel) {
+        // 예시로 간단한 UI
+        var email by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
+
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
