@@ -25,12 +25,12 @@ import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
 import kr.gachon.adigo.ui.theme.AdigoTheme
-import kr.gachon.adigo.ui.viewmodel.ContentViewModel
+import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 
 class LoginActivity : ComponentActivity() {
 
     // 1) Activity가 소유하는 ViewModel 인스턴스
-    private lateinit var viewModel: ContentViewModel
+    private lateinit var viewModel: AuthViewModel
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +44,7 @@ class LoginActivity : ComponentActivity() {
         val remoteDataSource = httpClient.create(tokenManager)
 
         // 3) ViewModel 생성 시점에 주입
-        viewModel = ContentViewModel(remoteDataSource, tokenManager)
+        viewModel = AuthViewModel(remoteDataSource, tokenManager)
 
         // 4) setContent에서 Compose UI 호출
         setContent {
@@ -57,7 +57,7 @@ class LoginActivity : ComponentActivity() {
 
 
     @Composable
-    fun LoginMain(viewModel: ContentViewModel) {
+    fun LoginMain(viewModel: AuthViewModel) {
         // 예시로 간단한 UI
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
