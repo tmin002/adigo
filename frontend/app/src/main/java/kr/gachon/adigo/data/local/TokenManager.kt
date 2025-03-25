@@ -1,6 +1,9 @@
 package kr.gachon.adigo.data.local
 
 import android.content.Context
+import android.util.Log
+import com.auth0.jwt.JWT
+import com.auth0.jwt.exceptions.JWTDecodeException
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kr.gachon.adigo.data.model.LoginResponse
@@ -26,6 +29,24 @@ class TokenManager(context: Context) {
             putString(JWT_KEY, response.accessToken)
             putString(REFRESH_TOKEN_KEY, response.refreshToken)
             apply()
+        }
+    }
+
+    fun isTokenExpired(): Boolean {
+        val token = getJwtToken() ?: return true
+        return try {
+            val decodedJWT = JWT.decode(token)
+            val expirationDate = decodedJWT.expiresAt
+            val isExpired = expirationDate.before(java.util.Date())
+
+            if(isExpired) {
+                Log.d("TokenManager", "Token is expired")
+            } else {
+                Log.d("TokenManager", "Token is not expired")
+            }
+            isExpired
+        } catch (e: JWTDecodeException) {
+            true
         }
     }
 

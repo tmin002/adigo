@@ -45,6 +45,9 @@ dependencies {
 
     val navversion = "2.8.9"
 
+    //jwt
+    implementation ("com.auth0:java-jwt:4.5.0")
+    
     // Jetpack Compose integration
     implementation("androidx.navigation:navigation-compose:$navversion")
 
