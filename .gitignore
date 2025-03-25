@@ -33,3 +33,4 @@ local.properties   # 개인 환경(SDK 경로 등) 설정
 /captures
 .externalNativeBuild
 .cxx
+
