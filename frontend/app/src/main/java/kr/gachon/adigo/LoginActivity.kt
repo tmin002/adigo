@@ -87,9 +87,9 @@ class LoginActivity : ComponentActivity() {
             Button(onClick = {
                 viewModel.sendLogin (email, password,
                     onSuccess = {
-                    // 로그인 성공 시 처리
-                    // 예: 다음 화면으로 이동, 토큰 저장 여부 확인 등
-                },
+                        // 로그인 성공 시 처리
+                        // 예: 다음 화면으로 이동, 토큰 저장 여부 확인 등
+                    },
                     onError = { errorMsg ->
 
                     })
