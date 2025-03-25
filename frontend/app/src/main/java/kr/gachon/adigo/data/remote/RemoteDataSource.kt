@@ -6,9 +6,12 @@ import retrofit2.Response
 
 
 // 3. RemoteDataSource.kt
-class RemoteDataSource(private val apiService: ApiService) {
+abstract class RemoteDataSource(private val apiService: ApiService) : ApiService {
+
     suspend fun login(username: String, password: String): Response<LoginResponse> =
         apiService.login(LoginRequest(username, password))
+
+
 
 
 }
