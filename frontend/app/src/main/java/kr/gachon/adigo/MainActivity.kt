@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,11 +18,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import kr.gachon.adigo.data.local.TokenManager
+import kr.gachon.adigo.data.remote.httpClient
 import kr.gachon.adigo.ui.theme.AdigoTheme
+import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 
 
 class MainActivity : ComponentActivity() {
@@ -44,7 +52,6 @@ class MainActivity : ComponentActivity() {
         viewModel = AuthViewModel(remoteDataSource, tokenManager)
 
         // 4) setContent에서 Compose UI 호출
-      develop
         setContent {
             AdigoTheme {
                 MainScreen(
