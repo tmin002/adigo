@@ -52,13 +52,13 @@ class MainActivity : ComponentActivity() {
         // 4) setContent에서 Compose UI 호출
         setContent {
             AdigoTheme {
-                LoginMain(viewModel, this)
+                Main(viewModel, this)
             }
         }
     }
 
     @Composable
-    fun LoginMain(viewModel: AuthViewModel, activity: MainActivity) {
+    fun Main(viewModel: AuthViewModel, activity: MainActivity) {
         // 예시로 간단한 UI
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
