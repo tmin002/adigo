@@ -8,10 +8,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
@@ -54,28 +52,27 @@ class MainActivity : ComponentActivity() {
         // 4) setContent에서 Compose UI 호출
         setContent {
             AdigoTheme {
-                MainScreen(
-                    onSignInClick = {
-                        // "시작하기" 버튼 클릭 시 회원가입 액티비티로 이동
-                        startActivity(Intent(this, SignUpActivity::class.java))
-                    },
-                    onLoginClick = {
-                        // "로그인" 텍스트 클릭 시 로그인 액티비티로 이동
-                        startActivity(Intent(this, LoginActivity::class.java))
-                    }
-                )
+                LoginMain(viewModel, this)
             }
         }
     }
-}
-
 
     @Composable
-    fun LoginMain(viewModel: AuthViewModel) {
+    fun LoginMain(viewModel: AuthViewModel, activity: MainActivity) {
         // 예시로 간단한 UI
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
 
+        // 회원가입 화면으로 이동하는 함수
+        val onSignInClick = {
+            val intent = Intent(activity, SignUpActivity::class.java)
+            activity.startActivity(intent)
+        }
+
+        var onLoginClick = {
+            var intent = Intent(activity, LoginActivity::class.java)
+            activity.startActivity(intent)
+        }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -105,9 +102,14 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(16.dp))
             // "이미 회원이신가요? 로그인" 링크 → 로그인 액티비티로 이동
             Text(
-                text = "이미 회원이신가요? 로그인",
+                text = "이미 회원이신가요?",
                 modifier = Modifier.clickable(onClick = onLoginClick)
             )
         }
     }
+
+
+
+
 }
+
