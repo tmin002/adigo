@@ -11,7 +11,7 @@
 
 # 필요 시, .idea 내에서 공유할 폴더/파일만 예외처리(주석 해제 후 사용)
 !.idea/codeStyles/
-!.idea/inspectionProfiles/
+!frontend/.idea/inspectionProfiles/
 !.idea/runConfigurations/
 
 # ------------------------
