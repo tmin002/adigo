@@ -11,7 +11,4 @@ abstract class RemoteDataSource(private val apiService: ApiService) : ApiService
     suspend fun login(username: String, password: String): Response<LoginResponse> =
         apiService.login(LoginRequest(username, password))
 
-
-
-
 }
