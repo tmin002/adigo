@@ -1,11 +1,11 @@
 package kr.gachon.adigo.data.model
 
-data class SendSmsResponse(
+data class smsResponse(
     val status: Int,
     val message: String,
-    val data: SmsResponseData
+    val data: responsedata
 ) {
-    data class SmsResponseData(
+    data class responsedata(
         val success: Boolean
     )
 }
