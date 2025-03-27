@@ -48,6 +48,7 @@ dependencies {
 
     // RealmKotlin
     implementation("io.realm.kotlin:library-base:1.11.0")
+    implementation("com.google.maps.android:maps-compose:4.3.3")
 
     //jwt
     implementation ("com.auth0:java-jwt:4.5.0")
