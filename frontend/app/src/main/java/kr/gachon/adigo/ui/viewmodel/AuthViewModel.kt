@@ -3,7 +3,9 @@ package kr.gachon.adigo.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.model.LoginRequest
 import kr.gachon.adigo.data.model.LoginResponse
@@ -26,9 +28,15 @@ class AuthViewModel(private val remoteDataSource: ApiService,
                 val body: LoginResponse? = response.body()
                 body?.let { loginResponse ->
                     tokenManager.saveTokens(loginResponse.data)
+
+                    withContext(Dispatchers.Main) {
+                        onSuccess()
+                    }
                 }
             } else {
-                // 에러 처리
+                withContext(Dispatchers.Main) {
+                    onError("로그인에 실패하였습니다: ${response.code()}")
+                }
             }
         }
     }

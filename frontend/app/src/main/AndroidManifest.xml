@@ -4,6 +4,9 @@
 
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+
+
     <uses-permission android:name="android.permission.UWB_RANGING" />
     <uses-feature android:name="android.hardware.uwb" android:required="true" />
 
@@ -40,10 +43,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ui.screen.LoginActivity"
-            android:exported="false"
-            android:label="로그인" />
+
 
         <activity
             android:name=".ui.screen.SignUpActivity"
