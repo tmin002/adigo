@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("io.realm.kotlin") version "1.11.0" // 최신 버전 확인 필요
 }
 
 
@@ -45,8 +46,9 @@ dependencies {
 
     val navversion = "2.8.9"
 
+    // RealmKotlin
+    implementation("io.realm.kotlin:library-base:1.11.0")
     implementation("com.google.maps.android:maps-compose:4.3.3")
-
 
     //jwt
     implementation ("com.auth0:java-jwt:4.5.0")
