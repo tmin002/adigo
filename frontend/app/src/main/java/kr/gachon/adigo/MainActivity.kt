@@ -26,7 +26,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
-import kr.gachon.adigo.ui.screen.LoginActivity
 import kr.gachon.adigo.ui.screen.SignUpActivity
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
@@ -69,10 +68,7 @@ class MainActivity : ComponentActivity() {
             activity.startActivity(intent)
         }
 
-        var onLoginClick = {
-            var intent = Intent(activity, LoginActivity::class.java)
-            activity.startActivity(intent)
-        }
+
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -100,11 +96,7 @@ class MainActivity : ComponentActivity() {
                 Text(text = "시작하기")
             }
             Spacer(modifier = Modifier.height(16.dp))
-            // "이미 회원이신가요? 로그인" 링크 → 로그인 액티비티로 이동
-            Text(
-                text = "이미 회원이신가요?",
-                modifier = Modifier.clickable(onClick = onLoginClick)
-            )
+
         }
     }
 
