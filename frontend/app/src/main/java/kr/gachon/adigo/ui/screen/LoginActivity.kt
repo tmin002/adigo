@@ -1,5 +1,6 @@
-package kr.gachon.adigo
+package kr.gachon.adigo.ui.screen
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kr.gachon.adigo.MainActivity
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
 import kr.gachon.adigo.ui.theme.AdigoTheme
@@ -50,21 +54,21 @@ class LoginActivity : ComponentActivity() {
         setContent {
             AdigoTheme {
                 // LoginMain에 viewModel을 넘겨준다
-                LoginMain(viewModel)
+                LoginMain(viewModel,this)
             }
         }
     }
 
 
     @Composable
-    fun LoginMain(viewModel: AuthViewModel) {
+    fun LoginMain(viewModel: AuthViewModel,activity: LoginActivity) {
         // 예시로 간단한 UI
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.Companion.fillMaxSize().padding(32.dp),
+            horizontalAlignment = Alignment.Companion.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             OutlinedTextField(
@@ -72,27 +76,31 @@ class LoginActivity : ComponentActivity() {
                 onValueChange = { email = it },
                 label = { Text("Email") },
                 shape = RoundedCornerShape(32.dp),
-                modifier = Modifier.fillMaxWidth().padding(4.dp),
+                modifier = Modifier.Companion.fillMaxWidth().padding(4.dp),
                 singleLine = true
             )
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
-                shape = RoundedCornerShape(32.dp),
-                modifier = Modifier.fillMaxWidth().padding(4.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+                modifier = Modifier.Companion.fillMaxWidth().padding(4.dp),
                 singleLine = true
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.Companion.height(16.dp))
             Button(onClick = {
-                viewModel.sendLogin (email, password,
-                    onSuccess = {
-                        // 로그인 성공 시 처리
-                        // 예: 다음 화면으로 이동, 토큰 저장 여부 확인 등
-                    },
-                    onError = { errorMsg ->
+//                viewModel.sendLogin(
+//                    email, password,
+//                    onSuccess = {
+//
+//                    },
+//                    onError = { errorMsg ->
+//
+//                    })
+                val intent = Intent(activity, MainScreenActivity::class.java)
+                activity.startActivity(intent)
 
-                    })
+
             }) {
                 Text("Login")
             }
