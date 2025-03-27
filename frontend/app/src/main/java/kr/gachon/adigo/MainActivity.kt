@@ -99,8 +99,12 @@ class MainActivity : ComponentActivity() {
             ) {
                 Text(text = "시작하기")
             }
-
-
+            Spacer(modifier = Modifier.height(16.dp))
+            // "이미 회원이신가요? 로그인" 링크 → 로그인 액티비티로 이동
+            Text(
+                text = "이미 회원이신가요?",
+                modifier = Modifier.clickable(onClick = onLoginClick)
+            )
         }
     }
 
