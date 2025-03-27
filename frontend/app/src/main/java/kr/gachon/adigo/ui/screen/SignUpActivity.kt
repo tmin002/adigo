@@ -1,4 +1,4 @@
-package kr.gachon.adigo
+package kr.gachon.adigo.ui.screen
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
