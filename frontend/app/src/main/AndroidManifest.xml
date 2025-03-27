@@ -13,6 +13,7 @@
 
 
     <application
+
         android:name=".AdigoApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -22,7 +23,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Adigo"
+
+
+
         tools:targetApi="31">
+
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -35,14 +41,21 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".LoginActivity"
+            android:name=".ui.screen.LoginActivity"
             android:exported="false"
             android:label="로그인" />
 
         <activity
-            android:name=".SignUpActivity"
+            android:name=".ui.screen.SignUpActivity"
             android:exported="false"
             android:label="회원가입" />
+
+        <activity
+            android:name=".ui.screen.MainScreenActivity"
+            android:exported="false"
+            android:label="메인" />
+
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyD_zRyrUM64ZmEhcZN3shzQmxNtxL_cw5M"/>
 
     </application>
 

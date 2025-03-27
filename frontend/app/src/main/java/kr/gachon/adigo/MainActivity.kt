@@ -26,6 +26,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
+import kr.gachon.adigo.ui.screen.LoginActivity
+import kr.gachon.adigo.ui.screen.SignUpActivity
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 

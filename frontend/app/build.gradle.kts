@@ -45,6 +45,9 @@ dependencies {
 
     val navversion = "2.8.9"
 
+    implementation("com.google.maps.android:maps-compose:4.3.3")
+
+
     //jwt
     implementation ("com.auth0:java-jwt:4.5.0")
     
