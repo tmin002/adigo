@@ -466,7 +466,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
             composable(route = Screens.Main.name) {
-                //Main()
+                MainScreenActivity(
+
+                )
             }
 
 
