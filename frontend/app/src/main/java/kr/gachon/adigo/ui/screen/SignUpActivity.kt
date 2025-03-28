@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import kr.gachon.adigo.AdigoApplication.Companion.tokenManager
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
@@ -127,6 +128,7 @@ class SignUpActivity : ComponentActivity() {
                     label = { Text("비밀번호") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
                     colors = TextFieldDefaults.colors(
                         disabledContainerColor = Color.Transparent,
                         errorContainerColor = Color.Transparent,
@@ -190,7 +192,11 @@ class SignUpActivity : ComponentActivity() {
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Button(
-                        onClick = { /* 다음 단계로 이동하는 로직 추가 */ },
+                        onClick = {
+
+                        /* 다음 단계로 이동하는 로직 추가 */
+                        
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("다음")
