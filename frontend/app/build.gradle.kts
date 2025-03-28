@@ -1,8 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    id("io.realm.kotlin") version "1.11.0" // 최신 버전 확인 필요
+    //alias(libs.plugins.kotlin.compose)
+    id("io.realm.kotlin")
 }
 
 
@@ -10,6 +10,8 @@ plugins {
 android {
     namespace = "kr.gachon.adigo"
     compileSdk = 35
+
+
 
     defaultConfig {
         applicationId = "kr.gachon.adigo"
@@ -40,6 +42,9 @@ android {
     buildFeatures {
         compose = true
     }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.11"
+    }
 }
 
 dependencies {
@@ -47,7 +52,7 @@ dependencies {
     val navversion = "2.8.9"
 
     // RealmKotlin
-    implementation("io.realm.kotlin:library-base:1.11.0")
+    implementation("io.realm.kotlin:library-base:1.16.0")
 
     //jwt
     implementation ("com.auth0:java-jwt:4.5.0")
