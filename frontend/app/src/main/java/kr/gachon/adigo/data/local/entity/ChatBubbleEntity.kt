@@ -5,7 +5,7 @@ import io.realm.kotlin.types.annotations.PrimaryKey
 import java.net.URL
 
 class ChatBubbleEntity: RealmObject {
-    lateinit var message: String
-    lateinit var sender: String
-    lateinit var type: String
+    var message: String = ""
+    var sender: String = ""
+    var type: String = ""
 }
