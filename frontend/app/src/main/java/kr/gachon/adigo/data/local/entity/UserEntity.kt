@@ -9,5 +9,5 @@ class UserEntity: RealmObject {
     lateinit var id: String;
     lateinit var name: String;
     lateinit var profileImageURL: URL;
-    lateinit var phoneNumber: String;
+    lateinit var email: String;
 }
