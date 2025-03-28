@@ -5,7 +5,7 @@ data class ChatBubble(
     override val id: String,
     val message: String,
     val type: ChatBubbleType
-): IManagedModel<ChatRoomDTO> {
+): BasedManagedModel<ChatRoomDTO> {
     override fun getDTO(): ChatRoomDTO {
         TODO("Not yet implemented. 채팅 기능 수정 필요")
     }
@@ -26,6 +26,6 @@ class ChatBubbleDTO(
     val message: String,
     val time: LocalDateTime
 
-) : IDataTransfterObject {
+) : BasedDataTransfterObject {
     override val id: String get() = this.message_id.toString()
 }
