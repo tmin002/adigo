@@ -43,43 +43,53 @@ android {
 }
 
 dependencies {
+    // 지도 컴포즈 통합 라이브러리 (Google Maps Compose)
+    implementation(libs.google.maps.compose)
 
-    val navversion = "2.8.9"
+    // Jetpack Compose용 머티리얼 디자인 컴포넌트
+    implementation(libs.androidx.compose.material)
 
+
+    // JWT (JSON Web Token) 라이브러리 - 인증 및 토큰 검증용
+    implementation(libs.auth0.java.jwt)
+
+    // Jetpack Compose 내 네비게이션 처리 (버전 카탈로그 사용)
+    implementation(libs.androidx.navigation.compose)
+
+    // 프래그먼트 기반 네비게이션 지원 (버전 카탈로그 사용)
+    implementation(libs.androidx.navigation.fragment)
+    implementation(libs.androidx.navigation.ui)
+    
     // RealmKotlin
     implementation("io.realm.kotlin:library-base:1.11.0")
-    implementation("com.google.maps.android:maps-compose:4.3.3")
 
-    //jwt
-    implementation ("com.auth0:java-jwt:4.5.0")
-    
-    // Jetpack Compose integration
-    implementation("androidx.navigation:navigation-compose:$navversion")
+    // 동적 기능 모듈에서의 네비게이션 지원 (버전 카탈로그 사용)
+    implementation(libs.androidx.navigation.dynamic.features.fragment)
 
-    // Views/Fragments integration
-    implementation("androidx.navigation:navigation-fragment:$navversion")
-    implementation("androidx.navigation:navigation-ui:$navversion")
+    // 네비게이션 관련 테스트 라이브러리 (버전 카탈로그 사용)
+    androidTestImplementation(libs.androidx.navigation.testing)
 
-    // Feature module support for Fragments
-    implementation("androidx.navigation:navigation-dynamic-features-fragment:$navversion")
+    // UWB (Ultra-Wideband) API: 근거리 통신 및 위치 측정 기능
+    implementation(libs.androidx.core.uwb)
+    implementation(libs.androidx.core.uwb.rxjava3)
 
-    // Testing Navigation
-    androidTestImplementation("androidx.navigation:navigation-testing:$navversion")
+    // RxJava: 비동기 및 반응형 프로그래밍 지원
+    implementation(libs.io.reactivex.rxjava3)
 
-    implementation ("androidx.core.uwb:uwb:1.0.0-alpha08")
-    implementation ("androidx.core.uwb:uwb-rxjava3:1.0.0-alpha08")
+    // Retrofit: REST API 통신을 위한 HTTP 클라이언트
+    implementation(libs.square.retrofit)
 
-    implementation ("io.reactivex.rxjava3:rxjava:3.1.5")
+    // Retrofit에서 JSON 직렬화/역직렬화를 위한 Gson 컨버터 (권장)
+    implementation(libs.square.retrofit.converter.gson)
 
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    // OkHttp: 네트워크 요청을 위한 HTTP 클라이언트 및 로깅 지원
+    implementation(libs.square.okhttp3.okhttp)
+    implementation(libs.square.okhttp3.logging.interceptor)
 
-    // JSON 변환을 위한 Gson 추가 (권장)
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    // Guava: 구글의 유틸리티 라이브러리 (다양한 편리 기능 제공)
+    implementation(libs.google.guava)
 
-    // OkHttp (옵션이지만 일반적으로 사용됨)
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation ("com.google.guava:guava:32.0.1-jre")
+    // 추가 AndroidX 라이브러리들
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -91,7 +101,9 @@ dependencies {
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.material3.android)
     implementation(libs.androidx.foundation.android)
-    implementation (libs.androidx.security.crypto)
+    implementation(libs.androidx.security.crypto)
+
+    // 테스트 관련 라이브러리들
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
