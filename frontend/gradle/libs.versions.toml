@@ -1,6 +1,6 @@
 [versions]
 agp = "8.9.0"
-kotlin = "2.0.0"
+kotlin = "1.9.23"
 coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -16,6 +16,16 @@ securityCrypto = "1.1.0-alpha06"
 ksp = "2.0.0-1.0.21"
 # Hilt
 hilt = "2.51.1"
+
+
+nav = "2.8.9"
+mapsCompose = "4.3.3"
+composeMaterial = "1.7.8"
+auth0Jwt = "4.5.0"
+rxjava3 = "3.1.5"
+retrofit = "2.11.0"
+okhttp = "4.12.0"
+guava = "32.0.1-jre"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +47,23 @@ androidx-foundation-layout-android = { group = "androidx.compose.foundation", na
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3Android" }
 androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
 
+google-maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
+androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "composeMaterial" }
+auth0-java-jwt = { group = "com.auth0", name = "java-jwt", version.ref = "auth0Jwt" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "nav" }
+androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "nav" }
+androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "nav" }
+androidx-navigation-dynamic-features-fragment = { group = "androidx.navigation", name = "navigation-dynamic-features-fragment", version.ref = "nav" }
+androidx-navigation-testing = { group = "androidx.navigation", name = "navigation-testing", version.ref = "nav" }
+androidx-core-uwb = { group = "androidx.core.uwb", name = "uwb", version = "1.0.0-alpha10" }
+androidx-core-uwb-rxjava3 = { group = "androidx.core.uwb", name = "uwb-rxjava3", version = "1.0.0-alpha10" }
+io-reactivex-rxjava3 = { group = "io.reactivex.rxjava3", name = "rxjava", version.ref = "rxjava3" }
+square-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+square-retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+square-okhttp3-okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+square-okhttp3-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+google-guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+
 # Hilt
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
@@ -44,7 +71,7 @@ hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", ve
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+#kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
 # Hilt
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }  # Hilt
