@@ -1,8 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    id("io.realm.kotlin") version "1.11.0" // 최신 버전 확인 필요
+    //alias(libs.plugins.kotlin.compose)
+    id("io.realm.kotlin")
 }
 
 
@@ -10,6 +10,8 @@ plugins {
 android {
     namespace = "kr.gachon.adigo"
     compileSdk = 35
+
+
 
     defaultConfig {
         applicationId = "kr.gachon.adigo"
@@ -40,6 +42,9 @@ android {
     buildFeatures {
         compose = true
     }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.11"
+    }
 }
 
 dependencies {
@@ -61,7 +66,7 @@ dependencies {
     implementation(libs.androidx.navigation.ui)
     
     // RealmKotlin
-    implementation("io.realm.kotlin:library-base:1.11.0")
+    implementation("io.realm.kotlin:library-base:1.16.0")
 
     // 동적 기능 모듈에서의 네비게이션 지원 (버전 카탈로그 사용)
     implementation(libs.androidx.navigation.dynamic.features.fragment)
