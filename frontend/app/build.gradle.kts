@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("io.realm.kotlin") version "1.11.0" // 최신 버전 확인 필요
 }
 
 
@@ -48,6 +49,7 @@ dependencies {
     // Jetpack Compose용 머티리얼 디자인 컴포넌트
     implementation(libs.androidx.compose.material)
 
+
     // JWT (JSON Web Token) 라이브러리 - 인증 및 토큰 검증용
     implementation(libs.auth0.java.jwt)
 
@@ -57,6 +59,9 @@ dependencies {
     // 프래그먼트 기반 네비게이션 지원 (버전 카탈로그 사용)
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
+    
+    // RealmKotlin
+    implementation("io.realm.kotlin:library-base:1.11.0")
 
     // 동적 기능 모듈에서의 네비게이션 지원 (버전 카탈로그 사용)
     implementation(libs.androidx.navigation.dynamic.features.fragment)

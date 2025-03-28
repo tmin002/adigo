@@ -26,7 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
-import kr.gachon.adigo.ui.screen.LoginActivity
+import kr.gachon.adigo.ui.screen.MainScreenActivity
 import kr.gachon.adigo.ui.screen.SignUpActivity
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
@@ -45,25 +45,36 @@ class MainActivity : ComponentActivity() {
         // 2) 수동 DI: TokenManager 생성
         val tokenManager = TokenManager(this)
 
-        //3) 수동 DI : RemoteDataSource 생성
-        val remoteDataSource = httpClient.create(tokenManager)
 
-        // 3) ViewModel 생성 시점에 주입
-        viewModel = AuthViewModel(remoteDataSource, tokenManager)
+        //jwt토큰이 존재하고 토큰이 만료되지 않았다면 .. 메인 화면으로 이동.
+        //tokenManager.getJwtToken()!=null && tokenManager.isTokenExpired()==false
+        if(true){
+            val intent = Intent(this, MainScreenActivity::class.java)
+            startActivity(intent)
+            finish()
+        }else{
 
-        // 4) setContent에서 Compose UI 호출
-        setContent {
-            AdigoTheme {
-                Main(viewModel, this)
+
+            //3) 수동 DI : RemoteDataSource 생성
+            val remoteDataSource = httpClient.create(tokenManager)
+
+            // 3) ViewModel 생성 시점에 주입
+            viewModel = AuthViewModel(remoteDataSource, tokenManager)
+
+            // 4) setContent에서 Compose UI 호출
+            setContent {
+                AdigoTheme {
+                    Main(viewModel, this)
+                }
             }
         }
+
+
     }
 
     @Composable
     fun Main(viewModel: AuthViewModel, activity: MainActivity) {
-        // 예시로 간단한 UI
-        var email by remember { mutableStateOf("") }
-        var password by remember { mutableStateOf("") }
+
 
         // 회원가입 화면으로 이동하는 함수
         val onSignInClick = {
@@ -71,10 +82,7 @@ class MainActivity : ComponentActivity() {
             activity.startActivity(intent)
         }
 
-        var onLoginClick = {
-            var intent = Intent(activity, LoginActivity::class.java)
-            activity.startActivity(intent)
-        }
+
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -102,11 +110,7 @@ class MainActivity : ComponentActivity() {
                 Text(text = "시작하기")
             }
             Spacer(modifier = Modifier.height(16.dp))
-            // "이미 회원이신가요? 로그인" 링크 → 로그인 액티비티로 이동
-            Text(
-                text = "이미 회원이신가요?",
-                modifier = Modifier.clickable(onClick = onLoginClick)
-            )
+
         }
     }
 }
