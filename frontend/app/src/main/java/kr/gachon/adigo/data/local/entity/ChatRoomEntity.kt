@@ -5,6 +5,6 @@ import io.realm.kotlin.types.annotations.PrimaryKey
 
 class ChatRoomEntity : RealmObject {
     @PrimaryKey
-    lateinit var id: String;
-    lateinit var targetUserID: String;
+    var id: String = "";
+    var targetUserID: String = "";
 }
