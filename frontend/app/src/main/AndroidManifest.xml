@@ -45,10 +45,6 @@
         </activity>
 
 
-        <activity
-            android:name=".ui.screen.SignUpActivity"
-            android:exported="false"
-            android:label="회원가입" />
 
         <activity
             android:name=".ui.screen.MainScreenActivity"
