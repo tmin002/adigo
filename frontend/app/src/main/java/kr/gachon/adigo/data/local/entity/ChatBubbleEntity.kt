@@ -6,6 +6,6 @@ import java.net.URL
 
 class ChatBubbleEntity: RealmObject {
     lateinit var message: String
-    var sender: Int = 0
-    var type: Int = 0
+    lateinit var sender: String
+    lateinit var type: String
 }
