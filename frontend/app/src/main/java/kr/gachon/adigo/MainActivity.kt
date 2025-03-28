@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
+import kr.gachon.adigo.ui.screen.MainScreenActivity
 import kr.gachon.adigo.ui.screen.SignUpActivity
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
@@ -44,18 +45,26 @@ class MainActivity : ComponentActivity() {
         // 2) 수동 DI: TokenManager 생성
         val tokenManager = TokenManager(this)
 
-        //3) 수동 DI : RemoteDataSource 생성
-        val remoteDataSource = httpClient.create(tokenManager)
+        if(tokenManager.getJwtToken()!=null && tokenManager.isTokenExpired()==false){
+            val intent = Intent(this, MainScreenActivity::class.java)
+            startActivity(intent)
+            finish()
+        }else{
+            //3) 수동 DI : RemoteDataSource 생성
+            val remoteDataSource = httpClient.create(tokenManager)
 
-        // 3) ViewModel 생성 시점에 주입
-        viewModel = AuthViewModel(remoteDataSource, tokenManager)
+            // 3) ViewModel 생성 시점에 주입
+            viewModel = AuthViewModel(remoteDataSource, tokenManager)
 
-        // 4) setContent에서 Compose UI 호출
-        setContent {
-            AdigoTheme {
-                Main(viewModel, this)
+            // 4) setContent에서 Compose UI 호출
+            setContent {
+                AdigoTheme {
+                    Main(viewModel, this)
+                }
             }
         }
+
+
     }
 
     @Composable
