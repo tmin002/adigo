@@ -45,11 +45,16 @@ class MainActivity : ComponentActivity() {
         // 2) 수동 DI: TokenManager 생성
         val tokenManager = TokenManager(this)
 
-        if(tokenManager.getJwtToken()!=null && tokenManager.isTokenExpired()==false){
+
+        //jwt토큰이 존재하고 토큰이 만료되지 않았다면 .. 메인 화면으로 이동.
+        //tokenManager.getJwtToken()!=null && tokenManager.isTokenExpired()==false
+        if(true){
             val intent = Intent(this, MainScreenActivity::class.java)
             startActivity(intent)
             finish()
         }else{
+
+
             //3) 수동 DI : RemoteDataSource 생성
             val remoteDataSource = httpClient.create(tokenManager)
 
