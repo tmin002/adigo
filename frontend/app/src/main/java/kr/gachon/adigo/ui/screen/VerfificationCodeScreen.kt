@@ -1,3 +1,4 @@
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,12 +17,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight // Import FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.navigation.NavController
 import kotlinx.coroutines.delay
+import kr.gachon.adigo.ui.screen.Screens
+import kr.gachon.adigo.ui.viewmodel.AuthViewModel
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 // --- Composable for the Verification Code Input Field ---
 // (VerificationCodeInputField and VerificationCodeDigitInput composables remain the same as before)
@@ -142,22 +147,77 @@ private fun VerificationCodeDigitInput( // Renamed composable
 }
 
 
-// --- VerificationCodeScreen with 4-digit input ---
+// --- VerificationCodeScreen 수정 ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VerificationCodeScreen(
+    viewModel: AuthViewModel,
+    Email: String, // 이전 화면에서 전달받은 값
+    phonenumber: String,
+    navcontroller: NavController,
     onBackPress: () -> Unit,
-    onResendClick: () -> Unit,
-    onSubmitCode: (String) -> Unit
+    // onSubmitCode 파라미터 제거됨
 ) {
     // --- State ---
-    val codeLength = 4 // *** Set code length to 4 ***
+    val codeLength = 4
     var enteredCode by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) } // 로딩 상태 추가
+    var errorMessage by remember { mutableStateOf<String?>(null) } // 에러 메시지 상태 추가
 
-    // Timer state (example) - reset if needed for shorter time?
-    var timeLeft by remember { mutableStateOf(5 * 60) } // Keeping 5 minutes for now
+    // Timer state
+    var timeLeft by remember { mutableStateOf(5 * 60) }
     val timerText = remember(timeLeft) { "%02d:%02d".format(timeLeft / 60, timeLeft % 60) }
-    LaunchedEffect(key1 = timeLeft) { if (timeLeft > 0) { delay(1000L); timeLeft-- } }
+    LaunchedEffect(key1 = timeLeft) { if (timeLeft > 0 && !isLoading) { delay(1000L); timeLeft-- } } // 로딩 중 아닐 때만 타이머 감소
+
+    // 인증번호 발송 요청 (화면 시작 시)
+    LaunchedEffect(Unit) {
+        Log.d("VerificationCodeScreen", "Requesting verification code for: $phonenumber")
+        viewModel.sendVerificationCode(phonenumber,
+            onSuccess = {
+                Log.i("VerificationCodeScreen", "Verification code sent successfully request initiated.")
+
+            },
+            onError = { errorMsg ->
+                Log.e("VerificationCodeScreen", "Failed to send verification code: $errorMsg")
+                errorMessage = "인증번호 발송 실패: $errorMsg" // 화면 내 에러 표시
+                // Toast.makeText(context, "인증번호 발송 실패: $errorMsg", Toast.LENGTH_LONG).show()
+                // 필요시 onBackPress() 호출 고려
+            }
+        )
+    }
+
+
+    fun onVerificationSuccess() {
+        val encodedEmail = URLEncoder.encode(Email, StandardCharsets.UTF_8.toString())
+        var encodedPhoneNumber = URLEncoder.encode(phonenumber, StandardCharsets.UTF_8.toString())
+        navcontroller.navigate(Screens.FinalSignUp.name + "/$encodedEmail" + "/$encodedPhoneNumber")
+
+    }
+
+    // 코드 검증 로직 함수화 (중복 제거)
+    val verifyCodeAction: (String) -> Unit = verifyCodeAction@{ codeToVerify ->
+        if (isLoading) return@verifyCodeAction // 람다 종료
+
+        isLoading = true
+        errorMessage = null
+        // 파라미터 이름을 phoneNumberOrEmail로 사용하는 것이 더 명확해 보입니다.
+        Log.d("VerificationCodeScreen", "Verifying code: $codeToVerify for ${phonenumber}l")
+        viewModel.verifyCode(
+            phonenumber, // ViewModel 함수 파라미터 이름에 맞게 전달
+            code = codeToVerify,
+            onSuccess = {
+                isLoading = false
+                Log.i("VerificationCodeScreen", "Code verification successful!")
+                onVerificationSuccess()
+            },
+            onError = { errorMsg ->
+                isLoading = false
+                Log.e("VerificationCodeScreen", "Code verification failed: $errorMsg")
+                errorMessage = "인증 실패: $errorMsg"
+            }
+        )
+    }
+
 
     BackHandler { onBackPress() }
 
@@ -166,7 +226,7 @@ fun VerificationCodeScreen(
             TopAppBar(
                 title = { /* No title */ },
                 navigationIcon = {
-                    IconButton(onClick = onBackPress) {
+                    IconButton(onClick = onBackPress, enabled = !isLoading) { // 로딩 중 아닐 때만 활성화
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로 가기")
                     }
                 },
@@ -181,11 +241,11 @@ fun VerificationCodeScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title - Updated text
+            // Title
             Text(
-                text = "보내드린 인증번호를\n입력해주세요", // Removed "6자리"
+                text = "보내드린 인증번호를\n입력해주세요",
                 fontSize = 22.sp,
-                fontWeight = FontWeight.Bold, // Use imported FontWeight
+                fontWeight = FontWeight.Bold,
                 lineHeight = 30.sp
             )
 
@@ -198,59 +258,87 @@ fun VerificationCodeScreen(
 
             // --- Verification Code Input Field ---
             VerificationCodeInputField(
-                codeLength = codeLength, // *** Pass codeLength (4) ***
+                codeLength = codeLength,
                 onCodeComplete = { code ->
                     println("인증 코드 입력됨: $code")
                     enteredCode = code
-                    // Optionally trigger submission automatically for 4 digits
-                    // onSubmitCode(code)
+                    // 코드가 자동으로 완성되면 검증 실행
+                    verifyCodeAction(code) // <<< 내부 함수 호출
                 },
                 modifier = Modifier.padding(vertical = 16.dp)
+                // 여기에 isEnabled = !isLoading 추가 가능 (입력 필드 비활성화)
             )
+
+            // 에러 메시지 표시
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
             // Resend Button
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable(onClick = onResendClick)
+                modifier = Modifier.clickable(
+                    enabled = !isLoading, // 로딩 중 아닐 때만 활성화
+                    onClick = {
+                        if (isLoading) return@clickable
+                        Log.d("VerificationCodeScreen", "Resend clicked for: $phonenumber")
+                        errorMessage = null // 이전 에러 메시지 초기화
+                        timeLeft = 5 * 60 // 타이머 리셋
+                        viewModel.sendVerificationCode(
+                            phonenumber,
+                            onSuccess = {
+                                Log.i("VerificationCodeScreen", "Resent verification code successfully.")
+                            },
+                            onError = { errorMsg ->
+                                Log.e("VerificationCodeScreen", "Failed to resend verification code: $errorMsg")
+                                errorMessage = "재발송 실패: $errorMsg" // 화면 내 에러 표시
+                            }
+                        )
+                    }
+                ).padding(vertical = 4.dp) // 클릭 영역 확보
             ) {
-                Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = null,
+                    tint = if (isLoading) Color.Gray else MaterialTheme.colorScheme.primary, // 로딩 중 색상 변경
+                    modifier = Modifier.size(18.dp)
+                )
                 Spacer(Modifier.width(4.dp))
-                Text("인증문자 재발송", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                Text(
+                    "인증문자 재발송",
+                    color = if (isLoading) Color.Gray else MaterialTheme.colorScheme.primary, // 로딩 중 색상 변경
+                    fontSize = 14.sp
+                )
             }
+
 
             Spacer(modifier = Modifier.weight(1f))
 
             // Submit button
             Button(
-                onClick = { if (enteredCode.length == codeLength) onSubmitCode(enteredCode) }, // *** Check against codeLength (4) ***
-                enabled = enteredCode.length == codeLength, // *** Enable when length is codeLength (4) ***
+                onClick = {
+                    if (enteredCode.length == codeLength) {
+                        verifyCodeAction(enteredCode) // <<< 내부 함수 호출
+                    }
+                },
+                enabled = enteredCode.length == codeLength && !isLoading, // 로딩 중 아닐 때만 활성화
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("인증 확인")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("인증 확인")
+                }
             }
         }
-    }
-}
-
-// --- Preview ---
-@Preview(showBackground = true)
-@Composable
-fun VerificationCodeInputField4DigitPreview() { // Updated Preview name
-    MaterialTheme {
-        var code by remember { mutableStateOf("") }
-        // Explicitly set codeLength in preview if default is removed
-        VerificationCodeInputField(codeLength = 4, onCodeComplete = { code = it })
-    }
-}
-
-@Preview(showBackground = true, device = "id:pixel_4")
-@Composable
-fun VerificationCodeScreen4DigitPreview() { // Updated Preview name
-    MaterialTheme {
-        VerificationCodeScreen(
-            onBackPress = {},
-            onResendClick = {},
-            onSubmitCode = { println("미리보기 제출 (4자리): $it") }
-        )
     }
 }
