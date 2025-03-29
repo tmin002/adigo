@@ -2,6 +2,7 @@ package kr.gachon.adigo
 
 import VerificationCodeScreen
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,16 +16,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
 import kr.gachon.adigo.ui.screen.EmailInputScreen
+import kr.gachon.adigo.ui.screen.FinalSignUpScreen
 import kr.gachon.adigo.ui.screen.PersistentBottomSheetMapScreen
 import kr.gachon.adigo.ui.screen.Screens
 import kr.gachon.adigo.ui.theme.AdigoTheme
@@ -56,7 +62,7 @@ class MainActivity : ComponentActivity() {
         // 4) setContent에서 Compose UI 호출
         setContent {
             AdigoTheme {
-                Main(viewModel, this)
+                Main(viewModel,tokenManager,this)
             }
         }
 
@@ -104,20 +110,33 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    fun Main(viewModel: AuthViewModel, activity: MainActivity) {
+    fun Main(viewModel: AuthViewModel,tokenManager: TokenManager, activity: MainActivity) {
 
 
         val navController = rememberNavController()
 
+        // <<< 시작 화면 동적 결정 >>>
+        val startDestination = remember {
+            if (tokenManager.isTokenExpired()==false) {
+                Log.d("MainActivity", "Valid token found. Starting with Main screen.")
+                Screens.Main.name
+            } else {
+                Log.d("MainActivity", "No valid token. Starting with OnBoard screen.")
+                Screens.OnBoard.name
+            }
+        }
+
 
         NavHost(
             navController = navController,
-            startDestination = Screens.OnBoard.name,
+            startDestination = startDestination,
         ) {
             composable(route = Screens.OnBoard.name) {
                 onBoard(navController)
             }
-            composable(route = Screens.SignIn.name) {
+            composable(
+                route = Screens.SignIn.name
+            ) {
 
 
                 EmailInputScreen(
@@ -128,15 +147,41 @@ class MainActivity : ComponentActivity() {
 
 
             }
-            composable(route = Screens.VerifyCode.name) {
+            composable(
+                route = Screens.VerifyCode.name + "/{Email}"+"/{phonenumber}",
+                arguments = listOf(
+                    navArgument("Email") { type = NavType.StringType },
+                    navArgument("phonenumber") { type = NavType.StringType } // <<< phonenumber 인자 정의 추가
+                )
+            ) { backStackEntry ->
+                // 3. 인자 가져오기: 정의된 키("Email", "phonenumber")를 사용하여 두 인자 모두 가져옴
+                val email = backStackEntry.arguments?.getString("Email") ?: ""
+                val phonenumber = backStackEntry.arguments?.getString("phonenumber") ?: "" // <<< phonenumber 인자 가져오기 추가
+
+
                 VerificationCodeScreen(
-                    onBackPress = {navController.popBackStack()},
-                    onResendClick = {
+                    viewModel, email, phonenumber, navController,
+                    onBackPress =
+                        {
+                            navController.popBackStack()
+                        },
+                )
 
-                    }
-                ) {
+            }
+            composable(
+                // route 패턴 수정: '+' 를 '/' 로 변경
+                route = Screens.FinalSignUp.name + "/{Email}/{phonenumber}",
+                arguments = listOf(
+                    navArgument("Email") { type = NavType.StringType },
+                    navArgument("phonenumber") { type = NavType.StringType } // 인자 정의는 그대로 유지
+                )
+            ){ backStackEntry ->
+                // 인자 가져오기
+                val email = backStackEntry.arguments?.getString("Email") ?: ""
+                val phonenumber = backStackEntry.arguments?.getString("phonenumber") ?: ""
 
-                }
+                // FinalSignUpScreen 호출 (이전 코드에서처럼 ViewModel, 인자, NavController 전달)
+                FinalSignUpScreen(viewModel, email, phonenumber, navController)
             }
             composable(route = Screens.Main.name) {
                 PersistentBottomSheetMapScreen()
