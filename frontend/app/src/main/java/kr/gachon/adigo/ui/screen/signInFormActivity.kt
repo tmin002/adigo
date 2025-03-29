@@ -28,7 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
-
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 
 class signInForm {
@@ -180,7 +181,9 @@ fun EmailInputScreen(
 
                 Button(
                     onClick = {
-                        navController.navigate(Screens.VerifyCode.name)
+                        val encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8.toString())
+                        var encodedPhoneNumber = URLEncoder.encode(phoneNumber, StandardCharsets.UTF_8.toString())
+                        navController.navigate(Screens.VerifyCode.name + "/$encodedEmail" + "/$encodedPhoneNumber")
 
                     },
                     modifier = Modifier.fillMaxWidth()
