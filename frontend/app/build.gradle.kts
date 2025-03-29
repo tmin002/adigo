@@ -41,6 +41,7 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.11"
@@ -70,6 +71,11 @@ dependencies {
 
     // 동적 기능 모듈에서의 네비게이션 지원 (버전 카탈로그 사용)
     implementation(libs.androidx.navigation.dynamic.features.fragment)
+    implementation(libs.material)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
 
     // 네비게이션 관련 테스트 라이브러리 (버전 카탈로그 사용)
     androidTestImplementation(libs.androidx.navigation.testing)

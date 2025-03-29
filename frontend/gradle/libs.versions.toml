@@ -1,3 +1,5 @@
+# gradle/libs.versions.toml
+
 [versions]
 agp = "8.9.0"
 kotlin = "1.9.23"
@@ -7,20 +9,24 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
-composeBom = "2025.02.01"
-foundationLayoutAndroid = "1.7.8"
-material3Android = "1.3.1"
-foundationAndroid = "1.7.8"
+composeBom = "2025.02.01" # 버전 확인 필요 (2025.01.00 -> 2025.02.01 변경됨, 맞는 버전 사용)
+foundationLayoutAndroid = "1.7.8" # 이 버전들이 Compose BOM과 호환되는지 확인 필요
+material3Android = "1.3.1"       # 이 버전들이 Compose BOM과 호환되는지 확인 필요
+foundationAndroid = "1.7.8"       # 이 버전들이 Compose BOM과 호환되는지 확인 필요
 securityCrypto = "1.1.0-alpha06"
+material = "1.12.0"
+appcompat = "1.6.1"
+constraintlayout = "2.1.4"  # <<< constraintlayout 버전 추가
+
 # Annotation Processor
 ksp = "2.0.0-1.0.21"
 # Hilt
 hilt = "2.51.1"
 
 
-nav = "2.8.9"
+nav = "2.8.9" # <<< navigation 관련 버전 정의
 mapsCompose = "4.3.3"
-composeMaterial = "1.7.8"
+composeMaterial = "1.7.8" # 이 버전이 Compose BOM과 호환되는지 확인 필요
 auth0Jwt = "4.5.0"
 rxjava3 = "3.1.5"
 retrofit = "2.11.0"
@@ -34,29 +40,29 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
-androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.10.1" }
-androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version = "2025.01.00" }
-androidx-ui = { group = "androidx.compose.ui", name = "ui" }
-androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.10.1" } # 직접 버전 지정됨
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version = "2025.01.00" } # 직접 버전 지정됨, [versions].composeBom과 다름 주의
+androidx-ui = { group = "androidx.compose.ui", name = "ui" } # BOM으로 버전 관리
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" } # BOM으로 버전 관리
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" } # BOM으로 버전 관리
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" } # BOM으로 버전 관리
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" } # BOM으로 버전 관리
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" } # BOM으로 버전 관리
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" } # BOM으로 버전 관리
 androidx-foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundationLayoutAndroid" }
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3Android" }
 androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
 
 google-maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
-androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "composeMaterial" }
+androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "composeMaterial" } # Material 1 (Compose)
 auth0-java-jwt = { group = "com.auth0", name = "java-jwt", version.ref = "auth0Jwt" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "nav" }
 androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "nav" }
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "nav" }
 androidx-navigation-dynamic-features-fragment = { group = "androidx.navigation", name = "navigation-dynamic-features-fragment", version.ref = "nav" }
 androidx-navigation-testing = { group = "androidx.navigation", name = "navigation-testing", version.ref = "nav" }
-androidx-core-uwb = { group = "androidx.core.uwb", name = "uwb", version = "1.0.0-alpha10" }
-androidx-core-uwb-rxjava3 = { group = "androidx.core.uwb", name = "uwb-rxjava3", version = "1.0.0-alpha10" }
+androidx-core-uwb = { group = "androidx.core.uwb", name = "uwb", version = "1.0.0-alpha10" } # 직접 버전 지정됨
+androidx-core-uwb-rxjava3 = { group = "androidx.core.uwb", name = "uwb-rxjava3", version = "1.0.0-alpha10" } # 직접 버전 지정됨
 io-reactivex-rxjava3 = { group = "io.reactivex.rxjava3", name = "rxjava", version.ref = "rxjava3" }
 square-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 square-retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
@@ -68,12 +74,20 @@ google-guava = { group = "com.google.guava", name = "guava", version.ref = "guav
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 
+# Material Components (View System)
+material = { group = "com.google.android.material", name = "material", version.ref = "material" } # Material (View System)
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" } # <<< constraintlayout 참조
+
+# Navigation KTX (View System)
+androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "nav" } # <<< version.ref 를 "nav" 로 수정
+androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "nav" } # <<< version.ref 를 "nav" 로 수정
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-#kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+#kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" } # 필요시 주석 해제
 
 # Hilt
-hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }  # Hilt
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }   # Hilt
-
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
