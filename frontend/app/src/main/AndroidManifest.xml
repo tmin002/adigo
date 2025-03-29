@@ -3,20 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.VIBRATE" />
-
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-
-
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.UWB_RANGING" />
-    <uses-feature android:name="android.hardware.uwb" android:required="true" />
 
-    <!-- 인터넷 사용 권한 선언 -->
+    <uses-feature
+        android:name="android.hardware.uwb"
+        android:required="true" /> <!-- 인터넷 사용 권한 선언 -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-
-
     <application
-
         android:name=".AdigoApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -26,12 +21,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Adigo"
-
-
-
         tools:targetApi="31">
-
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -43,16 +33,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-
-
         <activity
             android:name=".ui.screen.MainScreenActivity"
             android:exported="false"
             android:label="메인" />
 
-        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyD_zRyrUM64ZmEhcZN3shzQmxNtxL_cw5M"/>
 
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyD_zRyrUM64ZmEhcZN3shzQmxNtxL_cw5M" />
     </application>
 
 </manifest>
