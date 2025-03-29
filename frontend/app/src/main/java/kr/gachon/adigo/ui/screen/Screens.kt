@@ -5,6 +5,7 @@ enum class Screens {
     SignIn,
     Main,
     VerifyCode,
+    FinalSignUp,
 }
 
 
