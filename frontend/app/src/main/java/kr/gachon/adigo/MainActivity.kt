@@ -1,11 +1,15 @@
 package kr.gachon.adigo
 
 import VerificationCodeScreen
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,11 +20,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -33,6 +39,7 @@ import kr.gachon.adigo.ui.screen.EmailInputScreen
 import kr.gachon.adigo.ui.screen.FinalSignUpScreen
 import kr.gachon.adigo.ui.screen.PersistentBottomSheetMapScreen
 import kr.gachon.adigo.ui.screen.Screens
+import kr.gachon.adigo.ui.screen.getPhoneNumber
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
@@ -56,6 +63,8 @@ class MainActivity : ComponentActivity() {
 
         // 3) ViewModel 생성 시점에 주입
         viewModel = AuthViewModel(remoteDataSource, tokenManager)
+
+
 
 
         // 4) setContent에서 Compose UI 호출
@@ -110,9 +119,18 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun Main(viewModel: AuthViewModel,tokenManager: TokenManager, activity: MainActivity) {
-
-
         val navController = rememberNavController()
+
+        // 권한 요청을 위한 launcher
+        val permissionLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                Log.d("MainActivity", "READ_PHONE_STATE permission granted")
+            } else {
+                Log.d("MainActivity", "READ_PHONE_STATE permission denied")
+            }
+        }
 
         // <<< 시작 화면 동적 결정 >>>
         //jwt토큰이 존재하고 동시에 토큰이 만료되지 않았다면 메인창으로 이동
@@ -123,6 +141,28 @@ class MainActivity : ComponentActivity() {
             } else {
                 Log.d("MainActivity", "No valid token. Starting with OnBoard screen.")
                 Screens.OnBoard.name
+            }
+        }
+
+        // 앱 시작 시 전화번호 읽기 권한 요청
+        LaunchedEffect(Unit) {
+            val phoneStatePermission = ContextCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.READ_PHONE_STATE
+            ) == PackageManager.PERMISSION_GRANTED
+            
+            val phoneNumbersPermission = ContextCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.READ_PHONE_NUMBERS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            // 둘 다 권한이 없으면 먼저 READ_PHONE_STATE 요청
+            if (!phoneStatePermission) {
+                permissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+            } 
+            // READ_PHONE_STATE 권한은 있지만 READ_PHONE_NUMBERS 권한이 없으면 요청
+            else if (!phoneNumbersPermission) {
+                permissionLauncher.launch(Manifest.permission.READ_PHONE_NUMBERS)
             }
         }
 
