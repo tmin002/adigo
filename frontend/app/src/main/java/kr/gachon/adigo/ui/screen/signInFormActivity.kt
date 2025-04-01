@@ -64,6 +64,9 @@ fun EmailInputScreen(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top
     ) {
+
+        Spacer(Modifier.height(100.dp))
+
         Text(
             if (emailDuplicate) "이미 회원이시군요!" else "본인 확인을 위해\n이메일을 입력해주세요",
             style = MaterialTheme.typography.headlineMedium,
