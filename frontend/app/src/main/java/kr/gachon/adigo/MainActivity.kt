@@ -51,7 +51,6 @@ class MainActivity : ComponentActivity() {
         // 2) 수동 DI: TokenManager 생성
         val tokenManager = AdigoApplication.tokenManager
 
-
         //3) 수동 DI : RemoteDataSource 생성
         val remoteDataSource = httpClient.create(tokenManager)
 
@@ -116,8 +115,9 @@ class MainActivity : ComponentActivity() {
         val navController = rememberNavController()
 
         // <<< 시작 화면 동적 결정 >>>
+        //jwt토큰이 존재하고 동시에 토큰이 만료되지 않았다면 메인창으로 이동
         val startDestination = remember {
-            if (tokenManager.isTokenExpired()==false) {
+            if (tokenManager.isTokenExpired()==false && tokenManager.getJwtToken()!=null) {
                 Log.d("MainActivity", "Valid token found. Starting with Main screen.")
                 Screens.Main.name
             } else {
