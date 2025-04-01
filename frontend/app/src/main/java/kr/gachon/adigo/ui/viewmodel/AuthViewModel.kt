@@ -35,7 +35,11 @@ class AuthViewModel(private val remoteDataSource: ApiService,
                         onSuccess()
                     }
                 }
-            } else {
+            } else if(response.code() == 400){
+                withContext(Dispatchers.Main) {
+                    onError("로그인에 실패하였습니다: ${response.code()}")
+                }
+            } else if(response.code() == 500){
                 withContext(Dispatchers.Main) {
                     onError("로그인에 실패하였습니다: ${response.code()}")
                 }

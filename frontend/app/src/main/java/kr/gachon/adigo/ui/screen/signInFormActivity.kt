@@ -4,8 +4,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.telephony.TelephonyManager
 import android.util.Log
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +42,8 @@ import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.delay
 
 
 
@@ -46,20 +52,20 @@ import java.nio.charset.StandardCharsets
 fun getPhoneNumber(context: Context): String {
     try {
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-
+        
         // 두 권한 모두 확인
         val hasPhoneStatePermission = ContextCompat.checkSelfPermission(
-            context,
+            context, 
             Manifest.permission.READ_PHONE_STATE
         ) == PackageManager.PERMISSION_GRANTED
-
+        
         val hasPhoneNumbersPermission = ContextCompat.checkSelfPermission(
-            context,
+            context, 
             Manifest.permission.READ_PHONE_NUMBERS
         ) == PackageManager.PERMISSION_GRANTED
-
+        
         Log.d("PhonePermissions", "READ_PHONE_STATE: $hasPhoneStatePermission, READ_PHONE_NUMBERS: $hasPhoneNumbersPermission")
-
+        
         // 두 권한 중 하나라도 있으면 전화번호 가져오기 시도
         if (hasPhoneStatePermission || hasPhoneNumbersPermission) {
             try {
@@ -87,7 +93,7 @@ fun getPhoneNumber(context: Context): String {
 // 핸드폰 번호를 포맷팅하는 함수 (01012345678 -> 010-1234-5678)
 fun formatPhoneNumber(phoneNumber: String): String {
     if (phoneNumber.isEmpty()) return ""
-
+    
     // 입력값이 이미 숫자만 포함하고 있다고 가정
     return when {
         phoneNumber.length <= 3 -> {
@@ -108,6 +114,21 @@ fun formatPhoneNumber(phoneNumber: String): String {
     }
 }
 
+// 진동 효과를 실행하는 함수
+fun vibratePhone(context: Context) {
+    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    
+    // API 레벨 26 이상에서는 VibrationEffect 사용
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        // 150ms 동안 중간 강도로 진동
+        vibrator.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
+    } else {
+        // 이전 버전에서는 deprecated API 사용
+        @Suppress("DEPRECATION")
+        vibrator.vibrate(150)
+    }
+}
+
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun EmailInputScreen(
@@ -119,21 +140,42 @@ fun EmailInputScreen(
     var password by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var hasAttemptedToLoadPhoneNumber by remember { mutableStateOf(false) }
-
+    
+    // 에러 상태 및 흔들림 애니메이션을 위한 상태 변수
+    var isLoginError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    
     val email by emailViewModel.email
     val emailValid by emailViewModel.emailValid
     val emailDuplicate by emailViewModel.emailDuplicate
 
+    // 흔들림 애니메이션 상태
+    val shakeState = animateFloatAsState(
+        targetValue = if (isLoginError) 1f else 0f,
+        animationSpec = tween(durationMillis = 500),
+        finishedListener = { isLoginError = false }
+    )
+
+    // 오류 발생 시 애니메이션 및 진동 효과
+    LaunchedEffect(isLoginError) {
+        if (isLoginError) {
+            vibratePhone(context)
+            // 애니메이션이 끝나면 상태 리셋
+            delay(500)
+            isLoginError = false
+        }
+    }
+    
     // 휴대폰 번호 정규식 (010-1234-5678 형식)
     val phoneRegex = remember { "^01[016789]-\\d{3,4}-\\d{4}\$".toRegex() }
     val isPhoneNumberValid by derivedStateOf { phoneRegex.matches(phoneNumber) }
-
+    
     // 이메일이 유효하고 중복이 아닐 때 전화번호를 가져오기
     LaunchedEffect(emailValid, emailDuplicate) {
         if (emailValid && !emailDuplicate && !hasAttemptedToLoadPhoneNumber) {
             Log.d("EmailInputScreen", "Attempting to load phone number when email is valid and not duplicate")
             hasAttemptedToLoadPhoneNumber = true
-
+            
             val formattedNumber = getPhoneNumber(context)
             Log.d("EmailInputScreen", "Got phone number: $formattedNumber")
             if (formattedNumber.isNotEmpty()) {
@@ -141,6 +183,17 @@ fun EmailInputScreen(
             }
         }
     }
+
+    // 흔들림 효과를 적용할 수정자 함수
+    fun Modifier.shake(shakeState: Float): Modifier = this.then(
+        Modifier.graphicsLayer {
+            translationX = if (shakeState > 0f) {
+                (shakeState * 10 * kotlin.math.sin(shakeState * 20 * kotlin.math.PI)).toFloat()
+            } else {
+                0f
+            }
+        }
+    )
 
     Column(
         modifier = Modifier
@@ -203,11 +256,14 @@ fun EmailInputScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // 비밀번호 TextField에 흔들림 효과 적용
             TextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("비밀번호") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shake(shakeState.value),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 colors = TextFieldDefaults.colors(
@@ -219,20 +275,34 @@ fun EmailInputScreen(
                     unfocusedIndicatorColor = Color.Gray
                 )
             )
+            
+            // 에러 메시지 표시
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
             Button(
                 onClick = {
-
                     authViewModel.sendLogin(
                         email, password,
                         onSuccess = {
                             navController.navigate(Screens.Main.name)
                         },
                         onError = { errorMsg ->
-
+                            // 로그인 실패 시 에러 상태 활성화
+                            Log.d("EmailInputScreen", "Login failed: $errorMsg")
+                            errorMessage = if (errorMsg.contains("500")) {
+                                "서버 오류가 발생했습니다. 다시 시도해 주세요."
+                            } else {
+                                "이메일 또는 비밀번호가 올바르지 않습니다."
+                            }
+                            isLoginError = true
                         })
-
-
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
