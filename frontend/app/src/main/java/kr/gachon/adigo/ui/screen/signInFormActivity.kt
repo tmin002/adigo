@@ -1,6 +1,11 @@
 package kr.gachon.adigo.ui.screen
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.telephony.TelephonyManager
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,12 +24,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
@@ -32,10 +40,73 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 
-class signInForm {
 
+// 핸드폰 번호를 가져오는 함수
+@SuppressLint("MissingPermission")
+fun getPhoneNumber(context: Context): String {
+    try {
+        val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        // 두 권한 모두 확인
+        val hasPhoneStatePermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_PHONE_STATE
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val hasPhoneNumbersPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_PHONE_NUMBERS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        Log.d("PhonePermissions", "READ_PHONE_STATE: $hasPhoneStatePermission, READ_PHONE_NUMBERS: $hasPhoneNumbersPermission")
+
+        // 두 권한 중 하나라도 있으면 전화번호 가져오기 시도
+        if (hasPhoneStatePermission || hasPhoneNumbersPermission) {
+            try {
+                val phoneNumber = telephonyManager.line1Number ?: ""
+                Log.d("PhoneNumber", "Raw phone number: $phoneNumber")
+                if (phoneNumber.isNotEmpty()) {
+                    // 숫자만 추출
+                    val digitsOnly = phoneNumber.replace(Regex("[^0-9]"), "")
+                    return formatPhoneNumber(digitsOnly)
+                }
+            } catch (e: SecurityException) {
+                Log.e("PhoneNumber", "Security exception when getting phone number: ${e.message}")
+                e.printStackTrace()
+            }
+        } else {
+            Log.d("PhoneNumber", "No permission to read phone number")
+        }
+    } catch (e: Exception) {
+        Log.e("PhoneNumber", "Error getting phone number: ${e.message}")
+        e.printStackTrace()
+    }
+    return ""
 }
 
+// 핸드폰 번호를 포맷팅하는 함수 (01012345678 -> 010-1234-5678)
+fun formatPhoneNumber(phoneNumber: String): String {
+    if (phoneNumber.isEmpty()) return ""
+
+    // 입력값이 이미 숫자만 포함하고 있다고 가정
+    return when {
+        phoneNumber.length <= 3 -> {
+            // 3자리 이하는 그대로 표시 (예: "010")
+            phoneNumber
+        }
+        phoneNumber.length <= 7 -> {
+            // 4-7자리는 "010-1234" 형식으로 표시
+            phoneNumber.substring(0, 3) + "-" + phoneNumber.substring(3)
+        }
+        else -> {
+            // 8자리 이상은 "010-1234-5678" 형식으로 표시
+            val prefix = phoneNumber.substring(0, 3)           // 010
+            val middle = phoneNumber.substring(3, 7)           // 5386
+            val suffix = phoneNumber.substring(7)              // 3683
+            "$prefix-$middle-$suffix"
+        }
+    }
+}
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
@@ -44,10 +115,10 @@ fun EmailInputScreen(
     emailViewModel: EmailViewModel,
     navController: NavController
 ) {
-
+    val context = LocalContext.current
     var password by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
-
+    var hasAttemptedToLoadPhoneNumber by remember { mutableStateOf(false) }
 
     val email by emailViewModel.email
     val emailValid by emailViewModel.emailValid
@@ -56,6 +127,20 @@ fun EmailInputScreen(
     // 휴대폰 번호 정규식 (010-1234-5678 형식)
     val phoneRegex = remember { "^01[016789]-\\d{3,4}-\\d{4}\$".toRegex() }
     val isPhoneNumberValid by derivedStateOf { phoneRegex.matches(phoneNumber) }
+
+    // 이메일이 유효하고 중복이 아닐 때 전화번호를 가져오기
+    LaunchedEffect(emailValid, emailDuplicate) {
+        if (emailValid && !emailDuplicate && !hasAttemptedToLoadPhoneNumber) {
+            Log.d("EmailInputScreen", "Attempting to load phone number when email is valid and not duplicate")
+            hasAttemptedToLoadPhoneNumber = true
+
+            val formattedNumber = getPhoneNumber(context)
+            Log.d("EmailInputScreen", "Got phone number: $formattedNumber")
+            if (formattedNumber.isNotEmpty()) {
+                phoneNumber = formattedNumber
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -165,7 +250,8 @@ fun EmailInputScreen(
 
             TextField(
                 value = phoneNumber,
-                onValueChange = { phoneNumber = it },
+                onValueChange = { phoneNumber = it
+                },
                 label = { Text("휴대전화번호 (010-1234-5678)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -196,6 +282,4 @@ fun EmailInputScreen(
             }
         }
     }
-
-
 }
