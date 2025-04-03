@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -26,7 +27,11 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.launch
 
-// 메인 액티비티
+// 바텀시트에 표시할 컨텐츠 종류를 구분하기 위한 enum
+enum class BottomSheetContentType {
+    FRIENDS, MYPAGE, SETTINGS
+}
+
 class MainScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,20 +41,14 @@ class MainScreenActivity : ComponentActivity() {
     }
 }
 
-// 바텀시트에 표시할 컨텐츠 종류를 구분하기 위한 enum
-enum class BottomSheetContentType {
-    FRIENDS, MYPAGE, SETTINGS
-}
-
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PersistentBottomSheetMapScreen() {
+    // BottomSheetScaffold 상태와 코루틴 스코프
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
     )
     val scope = rememberCoroutineScope()
-
-    // 선택된 컨텐츠 상태 (기본값: FRIENDS)
     var selectedContent by remember { mutableStateOf(BottomSheetContentType.FRIENDS) }
 
     // 예시: 서울 좌표
@@ -58,119 +57,119 @@ fun PersistentBottomSheetMapScreen() {
         position = CameraPosition.fromLatLngZoom(seoul, 10f)
     }
 
-    BottomSheetScaffold(
-        scaffoldState = scaffoldState,
-        // 시트가 기본적으로 보이지 않게 peek 높이를 0.dp로 설정
-        sheetPeekHeight = 0.dp,
-        sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        sheetContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp) // 필요에 따라 높이 조절
-                    .background(Color.White.copy(alpha = 0.9f))
-                    .padding(16.dp)
-            ) {
-                // 드래그 핸들 (사용자가 시트를 드래그할 수 있도록)
-                Box(
+    // Box로 전체 레이아웃 감싸고, 고정 버튼 바를 오버레이로 배치합니다.
+    Box(modifier = Modifier.fillMaxSize()) {
+        BottomSheetScaffold(
+            scaffoldState = scaffoldState,
+            // 시트가 펼쳐질 때 시작 위치가 고정 버튼 바 높이(56.dp)에서 시작하도록 설정
+            sheetPeekHeight = 144.dp,
+            sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            sheetContent = {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    contentAlignment = Alignment.Center
+                        .height(400.dp) // 필요에 따라 높이 조절
+                        .background(Color.White.copy(alpha = 0.9f))
+                        .padding(16.dp)
                 ) {
+                    // 드래그 핸들 (시트 상단에 표시)
                     Box(
                         modifier = Modifier
-                            .width(80.dp)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(Color.Gray.copy(alpha = 0.7f))
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(Color.Gray.copy(alpha = 0.7f))
+                        )
+                    }
+                    // 선택된 컨텐츠에 따라 다른 내용을 표시
+                    when (selectedContent) {
+                        BottomSheetContentType.FRIENDS -> {
+                            Text(text = "친구 목록", style = MaterialTheme.typography.h6)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            for (i in 1..10) {
+                                Text(text = "친구 $i")
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                        }
+                        BottomSheetContentType.MYPAGE -> {
+                            Text(text = "마이페이지", style = MaterialTheme.typography.h6)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(text = "여기에 마이페이지 관련 정보를 표시합니다.")
+                        }
+                        BottomSheetContentType.SETTINGS -> {
+                            Text(text = "설정", style = MaterialTheme.typography.h6)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(text = "여기에 앱 설정 관련 정보를 표시합니다.")
+                        }
+                    }
+                }
+            }
+        ) { innerPadding ->
+            // Main content 영역: 지도 화면
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState
+                ) {
+                    Marker(
+                        state = MarkerState(position = seoul),
+                        title = "Seoul",
+                        snippet = "Marker in Seoul"
                     )
                 }
-                // 선택된 버튼에 따른 컨텐츠 분기
-                when (selectedContent) {
-                    BottomSheetContentType.FRIENDS -> {
-                        Text(text = "친구 목록", style = MaterialTheme.typography.h6)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        for (i in 1..10) {
-                            Text(text = "친구 $i")
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
-                    }
-                    BottomSheetContentType.MYPAGE -> {
-                        Text(text = "마이페이지", style = MaterialTheme.typography.h6)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = "여기에 마이페이지 관련 정보를 표시합니다.")
-                    }
-                    BottomSheetContentType.SETTINGS -> {
-                        Text(text = "설정", style = MaterialTheme.typography.h6)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = "여기에 앱 설정 관련 정보를 표시합니다.")
-                    }
-                }
             }
         }
-    ) { innerPadding ->
-        Box(
+        // 고정된 하단 버튼 바를 Box의 자식으로 오버레이로 배치 (zIndex를 높여 시트 위에 고정)
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(80.dp)
+                .background(Color.White)
+                .zIndex(1f), // 시트보다 위에 표시되도록
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // 지도 영역
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState
-            ) {
-                Marker(
-                    state = MarkerState(position = seoul),
-                    title = "Seoul",
-                    snippet = "Marker in Seoul"
-                )
-            }
-            // 고정된 하단 버튼 바 (content 영역에 배치하면 시트가 위로 올라올 때 덮어집니다)
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(Color.White.copy(alpha = 0.9f))
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                FixedBottomButton(
-                    icon = Icons.Default.Person,
-                    label = "친구",
-                    onClick = {
-                        selectedContent = BottomSheetContentType.FRIENDS
-                        scope.launch {
-                            scaffoldState.bottomSheetState.expand()
-                        }
-                    }
-                )
-                FixedBottomButton(
-                    icon = Icons.Default.AccountCircle,
-                    label = "마이페이지",
-                    onClick = {
-                        selectedContent = BottomSheetContentType.MYPAGE
-                        scope.launch {
-                            scaffoldState.bottomSheetState.expand()
-                        }
-                    }
-                )
-                FixedBottomButton(
-                    icon = Icons.Default.Settings,
-                    label = "설정",
-                    onClick = {
-                        selectedContent = BottomSheetContentType.SETTINGS
-                        scope.launch {
-                            scaffoldState.bottomSheetState.expand()
-                        }
-                    }
-                )
-            }
+            FixedBottomButton(
+                icon = Icons.Default.Person,
+                label = "친구",
+                onClick = {
+                    selectedContent = BottomSheetContentType.FRIENDS
+                    scope.launch { scaffoldState.bottomSheetState.expand() }
+                }
+            )
+            FixedBottomButton(
+                icon = Icons.Default.AccountCircle,
+                label = "마이페이지",
+                onClick = {
+                    selectedContent = BottomSheetContentType.MYPAGE
+                    scope.launch { scaffoldState.bottomSheetState.expand() }
+                }
+            )
+            FixedBottomButton(
+                icon = Icons.Default.Settings,
+                label = "설정",
+                onClick = {
+                    selectedContent = BottomSheetContentType.SETTINGS
+                    scope.launch { scaffoldState.bottomSheetState.expand() }
+                }
+            )
         }
+
     }
 }
 
+// 하단 고정 버튼 컴포저블 (아이콘 + 텍스트)
 @Composable
 fun FixedBottomButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
