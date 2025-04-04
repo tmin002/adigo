@@ -26,6 +26,15 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.launch
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.google.maps.android.compose.MapProperties
+
 
 // 바텀시트에 표시할 컨텐츠 종류를 구분하기 위한 enum
 enum class BottomSheetContentType {
@@ -41,6 +50,41 @@ class MainScreenActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun RequestLocationPermission() {
+    val context = LocalContext.current
+    var hasPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    // 권한 요청 런처 준비
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasPermission = granted
+    }
+
+    // 최초 실행 시 권한 체크 및 요청
+    LaunchedEffect(Unit) {
+        if (!hasPermission) {
+            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    // 권한에 따른 UI 분기 처리
+    if (hasPermission) {
+        Text("위치 권한 허용됨")
+    } else {
+        Text("위치 권한이 필요합니다")
+    }
+}
+
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PersistentBottomSheetMapScreen() {
@@ -55,6 +99,29 @@ fun PersistentBottomSheetMapScreen() {
     val seoul = LatLng(37.56, 126.97)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(seoul, 10f)
+    }
+    //위치권한 요청
+    val context = LocalContext.current
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ){
+        granted ->
+        hasLocationPermission = granted
+    }
+
+    //권한요청 실행
+    LaunchedEffect(Unit){
+        if(!hasLocationPermission){
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
     }
 
     // Box로 전체 레이아웃 감싸고, 고정 버튼 바를 오버레이로 배치합니다.
@@ -119,7 +186,10 @@ fun PersistentBottomSheetMapScreen() {
             ) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(
+                        isMyLocationEnabled = hasLocationPermission
+                    )
                 ) {
                     Marker(
                         state = MarkerState(position = seoul),
