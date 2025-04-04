@@ -35,11 +35,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
+
 import kr.gachon.adigo.ui.screen.EmailInputScreen
 import kr.gachon.adigo.ui.screen.FinalSignUpScreen
-import kr.gachon.adigo.ui.screen.PersistentBottomSheetMapScreen
 import kr.gachon.adigo.ui.screen.Screens
 import kr.gachon.adigo.ui.screen.getPhoneNumber
+import kr.gachon.adigo.ui.screen.map.MapScreen
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
@@ -224,7 +225,7 @@ class MainActivity : ComponentActivity() {
                 FinalSignUpScreen(viewModel, email, phonenumber, navController)
             }
             composable(route = Screens.Main.name) {
-                PersistentBottomSheetMapScreen()
+                MapScreen()
             }
 
 
