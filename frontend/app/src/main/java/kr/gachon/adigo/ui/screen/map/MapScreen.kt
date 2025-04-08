@@ -28,12 +28,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import com.google.maps.android.compose.MapProperties
+import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun MapScreen() {
+fun MapScreen(authViewModel: AuthViewModel,navController  : NavController) {
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberBottomSheetState(initialValue = Collapsed)
     )
@@ -98,10 +100,21 @@ fun MapScreen() {
                         MyPageBottomSheetContent()
                     }
                     BottomSheetContentType.SETTINGS -> {
-                        SettingsBottomSheetContent()
+                        SettingsBottomSheetContent(
+                            onLogout = {
+                                // 1) 토큰 삭제
+                                authViewModel.logout {
+                                    // 2) onboard 화면으로 라우팅
+                                    navController.navigate("onboard") {
+                                        popUpTo("map") { inclusive = true }
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
             }
+
         ) { innerPadding ->
             // 지도 부분
             Box(
