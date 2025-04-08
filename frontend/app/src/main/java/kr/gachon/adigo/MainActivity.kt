@@ -42,7 +42,6 @@ import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
 import kr.gachon.adigo.ui.screen.EmailInputScreen
 import kr.gachon.adigo.ui.screen.FinalSignUpScreen
 import kr.gachon.adigo.ui.screen.Screens
-import kr.gachon.adigo.ui.screen.getPhoneNumber
 import kr.gachon.adigo.ui.screen.map.MapScreen
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
@@ -250,7 +249,7 @@ class MainActivity : ComponentActivity() {
                 FinalSignUpScreen(viewModel, email, phonenumber, navController)
             }
             composable(route = Screens.Main.name) {
-                MapScreen()
+                MapScreen(viewModel,navController)
             }
 
 

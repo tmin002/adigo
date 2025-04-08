@@ -50,7 +50,7 @@ fun FriendsBottomSheetContent(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // 예시 친구 목록
-                for (i in 1..10) {
+                for (i in 1..10) { //친구 db 가져오기
                     Text(
                         text = "친구 $i",
                         modifier = Modifier
@@ -114,7 +114,9 @@ fun MyPageBottomSheetContent() {
 }
 
 @Composable
-fun SettingsBottomSheetContent() {
+fun SettingsBottomSheetContent(
+    onLogout: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -126,6 +128,18 @@ fun SettingsBottomSheetContent() {
         Text(text = "설정", style = MaterialTheme.typography.h6)
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "여기에 앱 설정 관련 정보를 표시합니다.")
+        Text(
+            text = "로그아웃",
+            style = MaterialTheme.typography.button,
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colors.error.copy(alpha = 0.1f))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .clickable {  onLogout()  }  // ← 여기서 호출
+        )
+        Spacer(modifier = Modifier.weight(1f))
+
+
     }
 }
 
