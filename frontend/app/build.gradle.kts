@@ -93,6 +93,10 @@ dependencies {
     // Retrofit에서 JSON 직렬화/역직렬화를 위한 Gson 컨버터 (권장)
     implementation(libs.square.retrofit.converter.gson)
 
+    //위치 의존성 추가
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+
     // OkHttp: 네트워크 요청을 위한 HTTP 클라이언트 및 로깅 지원
     implementation(libs.square.okhttp3.okhttp)
     implementation(libs.square.okhttp3.logging.interceptor)
