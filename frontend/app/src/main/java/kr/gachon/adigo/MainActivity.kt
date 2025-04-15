@@ -47,6 +47,7 @@ import kr.gachon.adigo.ui.screen.map.MapScreen
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
+import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
 import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 
 
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
     // 1) Activity가 소유하는 ViewModel 인스턴스
     private lateinit var viewModel: AuthViewModel
     private lateinit var uwbviewModel : UwbLocationViewModel
+    private lateinit var friendLocationViewModel: FriendLocationViewModel
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -80,6 +82,8 @@ class MainActivity : ComponentActivity() {
         viewModel = AuthViewModel(remoteDataSource, tokenManager)
 
         uwbviewModel = UwbLocationViewModel(uwbService)
+
+        friendLocationViewModel = FriendLocationViewModel()
 
 
 
@@ -250,7 +254,7 @@ class MainActivity : ComponentActivity() {
                 FinalSignUpScreen(viewModel, email, phonenumber, navController)
             }
             composable(route = Screens.Main.name) {
-                MapScreen()
+                MapScreen(friendLocationViewModel)
             }
 
 

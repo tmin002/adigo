@@ -29,18 +29,49 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.google.maps.android.compose.MapProperties
+import kr.gachon.adigo.ui.viewmodel.AuthViewModel
+import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
+import android.content.Context
+import com.bumptech.glide.Glide
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kr.gachon.adigo.data.model.global.UserLocation
+import androidx.compose.runtime.mutableStateOf
+import com.google.android.gms.maps.CameraUpdateFactory
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlin.coroutines.coroutineContext
+import com.google.android.gms.location.LocationServices
+import android.location.Location
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationResult
+import android.os.Looper
+import androidx.compose.foundation.gestures.awaitFirstDown
+import com.google.android.gms.location.Priority
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import com.google.maps.android.compose.CameraMoveStartedReason
+import kotlinx.coroutines.delay
+
+
 
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun MapScreen() {
+fun MapScreen(viewModel: FriendLocationViewModel) {
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberBottomSheetState(initialValue = Collapsed)
     )
     val scope = rememberCoroutineScope()
 
+
     var selectedContent by remember { mutableStateOf(BottomSheetContentType.FRIENDS) }
     var friendScreenState by remember { mutableStateOf<FriendScreenState>(FriendScreenState.List) }
+
 
     // 지도 카메라 위치 예시 (서울)
     val seoul = LatLng(37.56, 126.97)
@@ -72,6 +103,99 @@ fun MapScreen() {
         }
     }
 
+    //내 현재 위치, 위치추적 여부
+    var currentLocation by remember { mutableStateOf<LatLng?>(null)}
+    var isTracking by remember {mutableStateOf(false)}
+    //사용자 마지막 시간을 저장(클릭 후 움직임 없을 때 고정)
+    val lastUserInteractionTime = remember { mutableStateOf(System.currentTimeMillis()) }
+
+
+    //지도가 움직이면 추적 해제
+    LaunchedEffect(cameraPositionState.position) {
+        if(isTracking){
+            isTracking = false
+        }
+    }
+
+    //만약 위치 권한이 있으면 마지막 위치 받아오기
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+            val location = fusedLocationClient.lastLocation
+            location.addOnSuccessListener { loc: Location? ->
+                loc?.let {
+                    currentLocation = LatLng(it.latitude, it.longitude)
+                }
+            }
+        }
+    }
+
+    //친구 현재 위치
+    val friendIcons = remember { mutableStateMapOf<String, BitmapDescriptor?>() }
+
+    //위치 업데이트 요청
+    val fusedLocationClient = remember{ LocationServices.getFusedLocationProviderClient(context)}
+    val locationRequest = remember{
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 100L).apply {
+            setMinUpdateIntervalMillis(50L)
+        }.build()
+    }
+
+    //실시간으로 위치 추적(지도 중심으로 이동)
+    DisposableEffect(Unit) {
+        if (hasLocationPermission) {
+            val locationCallback = object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) {
+                    val loc = locationResult.lastLocation ?: return
+                    val newLatLng = LatLng(loc.latitude, loc.longitude)
+                    currentLocation = newLatLng
+
+                    // 내 위치 추적이 활성화된 경우만 지도 중심 이동
+                    if (isTracking) {
+                        scope.launch {
+                            cameraPositionState.animate(
+                                CameraUpdateFactory.newLatLngZoom(newLatLng, 18f)
+                            )
+                        }
+                    }
+                }
+            }
+
+
+            // 위치 업데이트 요청
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper()
+            )
+
+            // 컴포저블이 dispose될 때 위치 업데이트 해제
+            onDispose {
+                fusedLocationClient.removeLocationUpdates(locationCallback)
+            }
+        } else {
+            onDispose {}
+        }
+    }
+
+    //마커 클릭후 조작 없을때 카메라 가운데로 위치
+    LaunchedEffect(isTracking) {
+        while(isTracking){
+            delay(1000)
+            val now = System.currentTimeMillis()
+            if(now - lastUserInteractionTime.value > 3000){
+                currentLocation?.let{ location ->
+                    cameraPositionState.animate(
+                        update = CameraUpdateFactory.newLatLngZoom(location, 18f)
+                    )
+                }
+                break
+            }
+
+        }
+    }
+
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         BottomSheetScaffold(
@@ -94,9 +218,11 @@ fun MapScreen() {
                             }
                         )
                     }
+
                     BottomSheetContentType.MYPAGE -> {
                         MyPageBottomSheetContent()
                     }
+
                     BottomSheetContentType.SETTINGS -> {
                         SettingsBottomSheetContent()
                     }
@@ -107,24 +233,62 @@ fun MapScreen() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                contentAlignment = Alignment.BottomCenter
+
             ) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
                         isMyLocationEnabled = hasLocationPermission // 내 위치 표시
-                    )
+                    ),
+                    onMapClick = {
+                        isTracking = false // 터치가 될때 추적 종료
+                        lastUserInteractionTime.value = System.currentTimeMillis()
+                    },
+
                 ) {
-                    Marker(
-                        state = MarkerState(position = seoul),
-                        title = "Seoul",
-                        snippet = "Marker in Seoul"
-                    )
+                    viewModel.friends.forEach { user ->
+                        Marker(
+                            state = MarkerState(position = LatLng(user.latitude, user.longitude)),
+                            title = user.nickname,
+                            onClick = {
+
+                                scope.launch {
+                                    cameraPositionState.animate(
+                                        update = CameraUpdateFactory.newLatLngZoom(
+                                            LatLng(user.latitude, user.longitude),
+                                            18f // 친구 위치 확대 레벨
+                                        )
+                                    )
+                                }
+                                true
+                            }
+                        )
+                    }
+                    //내 위치 마커로 표시하기
+                    currentLocation?.let { location ->
+                        Marker(
+                            state = MarkerState(position = location),
+                            title = "my location",
+                            onClick = {
+                                isTracking = true //만약 마커를 클릭하면 추적 시작
+                                scope.launch {
+                                    cameraPositionState.animate(
+                                        update = CameraUpdateFactory.newLatLngZoom(
+                                            location,
+                                            18f
+                                        )
+                                    )
+                                }
+                                true
+                            }
+                        )
+                    }
                 }
             }
         }
-
         // 하단 고정 버튼 바
         Row(
             modifier = Modifier
