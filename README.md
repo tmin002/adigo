@@ -1,19 +1,15 @@
-# 📍 adigo (어디고)
+# adigo (어디고)
 
 > A real-time location-sharing app that helps friends stay connected through live maps and precise nearby detection using UWB technology.
 
 ---
 
-## 🚀 Project Overview
-
-**eodigo** is a mobile application that allows friends to share their real-time locations seamlessly.  
+**adigo** is a mobile application that allows friends to share their real-time locations seamlessly.  
 With **Ultra-Wideband (UWB)** communication, the app offers **highly accurate direction and distance detection** when users are physically close to each other.
-
-### 🔑 Key Features
+adigo has these two key features:
 
 - 🗺️ Real-time location sharing among friends.
 - 📍 Precise detection of direction and distance using UWB when in close proximity.
-- 📱 Intuitive and responsive user interface built with Jetpack Compose.
 
 ---
 
@@ -43,13 +39,13 @@ With **Ultra-Wideband (UWB)** communication, the app offers **highly accurate di
 
 ## 👥 Team & Responsibilities
 
-| Name | Role                                 |
-|------|--------------------------------------|
-| 서지호 | Backend Development, UWB Integration |
-| 조우영 | UI Design                            |
-| 김명선 | Map Features, UI Design              |
-| 송승환 | Network, Database Integration        |
-| 조우현 | Research, UI Support                 |
-| 김신우 | Research, UI Support                 |
+| Name | Role                                     |
+|------|------------------------------------------|
+| 서지호 | Backend Development, UWB Integration     |
+| 조우영 | UI Design                                |
+| 김명선 | Map Features, UI Design                  |
+| 송승환 | Network, Database Integration, UI Design |
+| 조우현 | Research, UI Support                     |
+| 김신우 | Research, UI Support                     |
 
 
