@@ -1,4 +1,4 @@
-# 📍 eodigo
+# 📍 adigo (어디고)
 
 > A real-time location-sharing app that helps friends stay connected through live maps and precise nearby detection using UWB technology.
 
