@@ -4,11 +4,9 @@ import io.realm.kotlin.Realm
 import io.realm.kotlin.RealmConfiguration
 import io.realm.kotlin.query.RealmResults
 import io.realm.kotlin.types.RealmObject
-import kr.gachon.adigo.data.model.global.BasedManagedModel
-import kr.gachon.adigo.data.model.global.User
 import kotlin.reflect.KClass
 
-abstract class BasedManagedModelDatabaseRepository<Entity: RealmObject>(
+abstract class AbstractManagedModelDatabaseRepository<Entity: RealmObject>(
     private val entityClass: KClass<Entity>
 ) {
     fun getRealm(): Realm {

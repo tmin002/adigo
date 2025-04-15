@@ -2,7 +2,7 @@ package kr.gachon.adigo.data
 
 import kr.gachon.adigo.data.model.global.BasedManagedModel
 
-abstract class BasedManagedModelRepository<Model: BasedManagedModel<*>> {
+abstract class AbstractManagedModelRepository<Model: BasedManagedModel<*>> {
     private val storage: MutableMap<String, Model> = mutableMapOf();
 
     val size: Int get() = storage.size;
