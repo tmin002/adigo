@@ -32,6 +32,33 @@ import androidx.navigation.NavController
 import com.google.maps.android.compose.MapProperties
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 
+import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
+import android.content.Context
+import com.bumptech.glide.Glide
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kr.gachon.adigo.data.model.global.UserLocation
+import androidx.compose.runtime.mutableStateOf
+import com.google.android.gms.maps.CameraUpdateFactory
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlin.coroutines.coroutineContext
+import com.google.android.gms.location.LocationServices
+import android.location.Location
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationResult
+import android.os.Looper
+import androidx.compose.foundation.gestures.awaitFirstDown
+import com.google.android.gms.location.Priority
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import com.google.maps.android.compose.CameraMoveStartedReason
+import kotlinx.coroutines.delay
+
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -234,7 +261,7 @@ fun MapScreen(authViewModel: AuthViewModel, navController  : NavController, frie
                     },
 
                 ) {
-                    viewModel.friends.forEach { user ->
+                    friendLocationViewModel.friends.forEach { user ->
                         Marker(
                             state = MarkerState(position = LatLng(user.latitude, user.longitude)),
                             title = user.nickname,
