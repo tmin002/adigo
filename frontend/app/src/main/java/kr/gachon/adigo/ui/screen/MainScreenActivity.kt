@@ -3,6 +3,7 @@ package kr.gachon.adigo.ui.screen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -36,20 +39,24 @@ class MainScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PersistentBottomSheetMapScreen()
+            val navController = rememberNavController()
+            PersistentBottomSheetMapScreen(navController = navController)
         }
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun PersistentBottomSheetMapScreen() {
+fun PersistentBottomSheetMapScreen(
+    navController: NavController,
+    initialContent: BottomSheetContentType = BottomSheetContentType.FRIENDS,
+    initialBottomSheetValue: BottomSheetValue = BottomSheetValue.Collapsed
+) {
     // BottomSheetScaffold 상태와 코루틴 스코프
     val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
+        bottomSheetState = rememberBottomSheetState(initialValue = initialBottomSheetValue)
     )
     val scope = rememberCoroutineScope()
-    var selectedContent by remember { mutableStateOf(BottomSheetContentType.FRIENDS) }
+    var selectedContent by remember { mutableStateOf(initialContent) }
 
     // 예시: 서울 좌표
     val seoul = LatLng(37.56, 126.97)
@@ -105,7 +112,32 @@ fun PersistentBottomSheetMapScreen() {
                         BottomSheetContentType.SETTINGS -> {
                             Text(text = "설정", style = MaterialTheme.typography.h6)
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(text = "여기에 앱 설정 관련 정보를 표시합니다.")
+
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = "알림 설정",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            navController.navigate("notification_setting")
+                                        }
+                                        .padding(vertical = 16.dp, horizontal = 8.dp),
+                                    color = Color.Black
+                                )
+                                Divider(color = Color.LightGray, thickness = 1.dp)
+
+                                Text(
+                                    text = "회원가입 정보",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            navController.navigate("signup_info")
+                                        }
+                                        .padding(vertical = 16.dp, horizontal = 8.dp),
+                                    color = Color.Black
+                                )
+                                Divider(color = Color.LightGray, thickness = 1.dp)
+                            }
                         }
                     }
                 }

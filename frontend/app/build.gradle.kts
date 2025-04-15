@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     //alias(libs.plugins.kotlin.compose)
     id("io.realm.kotlin")
+
 }
 
 
@@ -76,6 +77,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation("androidx.core:core-ktx:1.16.0")
 
     // 네비게이션 관련 테스트 라이브러리 (버전 카탈로그 사용)
     androidTestImplementation(libs.androidx.navigation.testing)

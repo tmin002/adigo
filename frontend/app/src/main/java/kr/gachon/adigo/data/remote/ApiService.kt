@@ -6,7 +6,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
-
+import kr.gachon.adigo.data.model.UserProfile
 
 
 
@@ -33,4 +33,6 @@ interface ApiService {
     @POST("auth/reissue")
     suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<LoginResponse>
 
+    @GET("/profile")
+    suspend fun getUserProfile(): Response<UserProfile>
 }

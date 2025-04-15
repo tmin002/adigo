@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.BottomSheetValue
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,14 +36,18 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
+import kr.gachon.adigo.ui.screen.BottomSheetContentType
 import kr.gachon.adigo.ui.screen.EmailInputScreen
 import kr.gachon.adigo.ui.screen.FinalSignUpScreen
+import kr.gachon.adigo.ui.screen.NotificationSettingScreen
 import kr.gachon.adigo.ui.screen.PersistentBottomSheetMapScreen
 import kr.gachon.adigo.ui.screen.Screens
+import kr.gachon.adigo.ui.screen.SignUpInfoScreen
 import kr.gachon.adigo.ui.screen.getPhoneNumber
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
+import kr.gachon.adigo.ui.viewmodel.UserViewModel
 
 
 class MainActivity : ComponentActivity() {
@@ -120,6 +125,12 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun Main(viewModel: AuthViewModel,tokenManager: TokenManager, activity: MainActivity) {
         val navController = rememberNavController()
+
+        val remoteDataSource = httpClient.create(tokenManager)
+        val userViewModel = remember {
+            UserViewModel(remoteDataSource, tokenManager)
+        }
+
 
         // 권한 요청을 위한 launcher
         val permissionLauncher = rememberLauncherForActivityResult(
@@ -224,10 +235,37 @@ class MainActivity : ComponentActivity() {
                 FinalSignUpScreen(viewModel, email, phonenumber, navController)
             }
             composable(route = Screens.Main.name) {
-                PersistentBottomSheetMapScreen()
+                PersistentBottomSheetMapScreen(navController, initialContent = BottomSheetContentType.FRIENDS)
             }
 
+            composable("main_settings") {
+                PersistentBottomSheetMapScreen(
+                    navController = navController,
+                    initialContent = BottomSheetContentType.SETTINGS,
+                    initialBottomSheetValue = BottomSheetValue.Expanded
+                )
+            }
 
+            composable("notification_setting") {
+                NotificationSettingScreen(
+                    navController = navController,
+                    onBackToSettings = {
+                        navController.navigate("main_settings") {
+                            popUpTo("main_settings") { inclusive = true }
+                        }
+                })
+            }
+            composable("signup_info") {
+                SignUpInfoScreen(
+                    navController = navController,
+                    onBackToSettings = {
+                        navController.navigate("main_settings") {
+                            popUpTo("main_settings") { inclusive = true }
+                        }
+                    },
+                    viewModel = userViewModel
+                )
+            }
         }
 
 

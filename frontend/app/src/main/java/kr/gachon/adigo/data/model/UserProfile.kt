@@ -2,6 +2,7 @@ package kr.gachon.adigo.data.model
 
 data class UserProfile(
     val email: String,
+    val phonenumber: String,
     val nickname: String,
     val profileImage: String?,  // Swift의 URL? -> String?
     val authority: Authority
