@@ -93,12 +93,20 @@ dependencies {
     // Retrofit에서 JSON 직렬화/역직렬화를 위한 Gson 컨버터 (권장)
     implementation(libs.square.retrofit.converter.gson)
 
+    //위치 의존성 추가
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    //glide 의존성 추가
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
     // OkHttp: 네트워크 요청을 위한 HTTP 클라이언트 및 로깅 지원
     implementation(libs.square.okhttp3.okhttp)
     implementation(libs.square.okhttp3.logging.interceptor)
 
     // Guava: 구글의 유틸리티 라이브러리 (다양한 편리 기능 제공)
     implementation(libs.google.guava)
+
+
 
     // 추가 AndroidX 라이브러리들
     implementation(libs.androidx.core.ktx)
