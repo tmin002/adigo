@@ -43,13 +43,13 @@ With **Ultra-Wideband (UWB)** communication, the app offers **highly accurate di
 
 ## 👥 Team & Responsibilities
 
-| Name   | Role                                 |
-|--------|--------------------------------------|
+| Name | Role                                 |
+|------|--------------------------------------|
 | 서지호 | Backend Development, UWB Integration |
 | 조우영 | UI Design                            |
 | 김명선 | Map Features, UI Design              |
 | 송승환 | Network, Database Integration        |
-| 조우영 | Research, UI Support                 |
+| 조우현 | Research, UI Support                 |
 | 김신우 | Research, UI Support                 |
 
 
