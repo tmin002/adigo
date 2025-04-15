@@ -28,41 +28,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import com.google.maps.android.compose.MapProperties
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
-import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
-import android.content.Context
-import com.bumptech.glide.Glide
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kr.gachon.adigo.data.model.global.UserLocation
-import androidx.compose.runtime.mutableStateOf
-import com.google.android.gms.maps.CameraUpdateFactory
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
-import kotlin.coroutines.coroutineContext
-import com.google.android.gms.location.LocationServices
-import android.location.Location
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationResult
-import android.os.Looper
-import androidx.compose.foundation.gestures.awaitFirstDown
-import com.google.android.gms.location.Priority
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
-import com.google.maps.android.compose.CameraMoveStartedReason
-import kotlinx.coroutines.delay
-
-
 
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun MapScreen(viewModel: FriendLocationViewModel) {
+
+fun MapScreen(authViewModel: AuthViewModel, navController  : NavController, friendLocationViewModel: FriendLocationViewModel) {
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberBottomSheetState(initialValue = Collapsed)
     )
@@ -224,10 +198,21 @@ fun MapScreen(viewModel: FriendLocationViewModel) {
                     }
 
                     BottomSheetContentType.SETTINGS -> {
-                        SettingsBottomSheetContent()
+                        SettingsBottomSheetContent(
+                            onLogout = {
+                                // 1) 토큰 삭제
+                                authViewModel.logout {
+                                    // 2) onboard 화면으로 라우팅
+                                    navController.navigate("onboard") {
+                                        popUpTo("map") { inclusive = true }
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
             }
+
         ) { innerPadding ->
             // 지도 부분
             Box(
