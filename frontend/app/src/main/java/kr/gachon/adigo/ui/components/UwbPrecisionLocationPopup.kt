@@ -23,7 +23,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import kotlinx.coroutines.launch
 import kr.gachon.adigo.R
-import kr.gachon.adigo.service.UwbService
+import kr.gachon.adigo.service.uwbService
 import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 
 @Composable
@@ -116,6 +116,7 @@ fun UwbPrecisionLocationPopup(
                                         onClick = {
                                             coroutineScope.launch {
                                                 viewModel.startUwb(address,channel)
+
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
@@ -167,13 +168,18 @@ fun UwbPrecisionLocationPopup(
 
 
 @Composable
-fun ControllerSwitch(viewModel: UwbLocationViewModel ) {
+fun ControllerSwitch(viewModel: UwbLocationViewModel) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Switch(
+            checked = viewModel.isController,
+            onCheckedChange = { isChecked ->
+                viewModel.setControllerState(isChecked)
 
-    Switch(
-        checked = viewModel.isController,
-        onCheckedChange = viewModel::setControllerState
-    )
+            }
+        )
+    }
 }
+
 
 
 @Composable
@@ -207,7 +213,7 @@ fun DistanceMeter(distance: Float) {
 @Composable
 fun UwbPrecisionLocationPopupPreview() {
     val context = LocalContext.current
-    val uwbService = remember { UwbService(context) }
+    val uwbService = remember { uwbService(context) }
     val viewModel = remember { UwbLocationViewModel(uwbService) }
 
     UwbPrecisionLocationPopup(

@@ -3,8 +3,10 @@ package kr.gachon.adigo
 import VerificationCodeScreen
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -35,20 +37,32 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
+import kr.gachon.adigo.service.uwbService
+import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
 import kr.gachon.adigo.ui.screen.EmailInputScreen
 import kr.gachon.adigo.ui.screen.FinalSignUpScreen
-import kr.gachon.adigo.ui.screen.PersistentBottomSheetMapScreen
 import kr.gachon.adigo.ui.screen.Screens
-import kr.gachon.adigo.ui.screen.getPhoneNumber
+import kr.gachon.adigo.ui.screen.map.MapScreen
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
+import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
+import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 
 
 class MainActivity : ComponentActivity() {
 
     // 1) Activity가 소유하는 ViewModel 인스턴스
     private lateinit var viewModel: AuthViewModel
+    private lateinit var uwbviewModel : UwbLocationViewModel
+    private lateinit var friendLocationViewModel: FriendLocationViewModel
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (!isGranted) {
+                Toast.makeText(this, "UWB 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+            }
+        }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,8 +75,14 @@ class MainActivity : ComponentActivity() {
         //3) 수동 DI : RemoteDataSource 생성
         val remoteDataSource = httpClient.create(tokenManager)
 
+        var uwbService = uwbService(this)
+
         // 3) ViewModel 생성 시점에 주입
         viewModel = AuthViewModel(remoteDataSource, tokenManager)
+
+        uwbviewModel = UwbLocationViewModel(uwbService)
+
+        friendLocationViewModel = FriendLocationViewModel()
 
 
 
@@ -72,6 +92,14 @@ class MainActivity : ComponentActivity() {
             AdigoTheme {
                 Main(viewModel,tokenManager,this)
             }
+        }
+
+        // 앱 실행 시 UWB 권한 요청
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.UWB_RANGING)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissionLauncher.launch(Manifest.permission.UWB_RANGING)
         }
 
 
@@ -110,6 +138,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 Text(text = "시작하기")
             }
+            UwbPrecisionLocationPopup(isVisible = true, onDismissRequest = {}, viewModel = uwbviewModel)
             Spacer(modifier = Modifier.height(16.dp))
 
         }
@@ -224,7 +253,7 @@ class MainActivity : ComponentActivity() {
                 FinalSignUpScreen(viewModel, email, phonenumber, navController)
             }
             composable(route = Screens.Main.name) {
-                PersistentBottomSheetMapScreen()
+                MapScreen(viewModel,navController,friendLocationViewModel)
             }
 
 

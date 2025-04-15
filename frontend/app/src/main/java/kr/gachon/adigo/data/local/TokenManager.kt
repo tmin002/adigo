@@ -7,17 +7,31 @@ import com.auth0.jwt.exceptions.JWTDecodeException
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kr.gachon.adigo.data.model.LoginResponse
+import javax.crypto.AEADBadTagException
 
 class TokenManager(context: Context) {
-    private val prefs = EncryptedSharedPreferences.create(
-        context,
-        "jwt_prefs",
-        MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val prefs = try {
+        EncryptedSharedPreferences.create(
+            context,
+            "jwt_prefs",
+            MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    } catch (e: AEADBadTagException) {
+        context.deleteSharedPreferences("jwt_prefs") // 손상된 prefs 삭제
+        EncryptedSharedPreferences.create(
+            context,
+            "jwt_prefs",
+            MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
 
     companion object {
         private const val JWT_KEY = "jwt_token"

@@ -7,6 +7,12 @@
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.UWB_RANGING" />
 
+    <!--내 위치 뜨게 하는 권한-->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+
+
     <uses-feature
         android:name="android.hardware.uwb"
         android:required="true" /> <!-- 인터넷 사용 권한 선언 -->

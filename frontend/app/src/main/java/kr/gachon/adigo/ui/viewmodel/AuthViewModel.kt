@@ -47,6 +47,13 @@ class AuthViewModel(private val remoteDataSource: ApiService,
         }
     }
 
+    fun logout(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            tokenManager.clearTokens()
+            onComplete()
+        }
+    }
+
     fun sendVerificationCode(phonenumber: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             val response = remoteDataSource.sendSMS(phonenumber)

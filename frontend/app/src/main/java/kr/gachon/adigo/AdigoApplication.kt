@@ -12,6 +12,7 @@ class AdigoApplication : Application() {
 
         lateinit var httpService: ApiService
             private set
+
     }
 
     override fun onCreate() {
