@@ -36,6 +36,7 @@ class TokenManager(context: Context) {
     companion object {
         private const val JWT_KEY = "jwt_token"
         private const val REFRESH_TOKEN_KEY = "refresh_token"
+        private const val DEVICE_TOKEN_KEY = "device_token"
     }
 
     fun saveTokens(response: LoginResponse.Response) {
@@ -45,6 +46,15 @@ class TokenManager(context: Context) {
             apply()
         }
     }
+
+    fun saveDeviceToken(token: String) {
+        prefs.edit().apply {
+            putString(DEVICE_TOKEN_KEY, token)
+            apply()
+        }
+    }
+
+    fun getDeviceToken(): String? = prefs.getString(DEVICE_TOKEN_KEY, null)
 
     fun isTokenExpired(): Boolean {
         val token = getJwtToken() ?: return true
