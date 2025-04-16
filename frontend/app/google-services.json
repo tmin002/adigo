@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "990610389247",
+    "project_id": "adigo-49369",
+    "storage_bucket": "adigo-49369.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:990610389247:android:216097b675ae9c74adf4ca",
+        "android_client_info": {
+          "package_name": "kr.gachon.adigo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6cJMl-FME6ORLoFoCINxVEXqV2mvmGLo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

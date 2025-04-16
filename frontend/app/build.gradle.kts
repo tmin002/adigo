@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     //alias(libs.plugins.kotlin.compose)
     id("io.realm.kotlin")
+    id("com.google.gms.google-services")
 }
 
 
@@ -49,6 +50,8 @@ android {
 }
 
 dependencies {
+
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
     // 지도 컴포즈 통합 라이브러리 (Google Maps Compose)
     implementation(libs.google.maps.compose)
 
@@ -76,6 +79,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.firebase.messaging)
 
     // 네비게이션 관련 테스트 라이브러리 (버전 카탈로그 사용)
     androidTestImplementation(libs.androidx.navigation.testing)
