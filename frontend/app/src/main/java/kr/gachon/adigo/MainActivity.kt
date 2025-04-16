@@ -35,6 +35,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.messaging.FirebaseMessaging
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.httpClient
 import kr.gachon.adigo.service.uwbService
@@ -83,6 +85,18 @@ class MainActivity : ComponentActivity() {
         uwbviewModel = UwbLocationViewModel(uwbService)
 
         friendLocationViewModel = FriendLocationViewModel()
+
+
+        FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+            if (!task. isSuccessful) {
+                Log.d("push", "Fetching FCM registration token failed", task.exception)
+                return@OnCompleteListener
+            }
+
+            val token = task. result
+            tokenManager.saveDeviceToken(token)
+            Log.d("FCMTOKEN", token)
+        })
 
 
 
