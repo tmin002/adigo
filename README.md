@@ -33,7 +33,9 @@ adigo has these two key features:
 
 ### 🌐 Backend
 - **Framework**: Spring Boot
-- **Database**: MySQL
+- **Database**: MySQL, Redis
+- **Infra** : Docker, Ubuntu
+
 
 ---
 
