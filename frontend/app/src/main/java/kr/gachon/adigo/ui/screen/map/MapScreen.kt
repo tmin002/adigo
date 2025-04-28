@@ -102,6 +102,8 @@ fun MapScreen(authViewModel: AuthViewModel, navController  : NavController, frie
         if (!hasLocationPermission) {
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
+
+        authViewModel.sendDeviceToken()
     }
 
     //내 현재 위치, 위치추적 여부
