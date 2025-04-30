@@ -7,15 +7,14 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.AdigoApplication.Companion.httpService
 import kr.gachon.adigo.data.local.TokenManager
-import kr.gachon.adigo.data.model.LoginRequest
-import kr.gachon.adigo.data.model.LoginResponse
-import kr.gachon.adigo.data.model.SignUpRequest
-import kr.gachon.adigo.data.model.newPushTokenDto
-import kr.gachon.adigo.data.model.newPushTokenResponseDto
-import kr.gachon.adigo.data.model.smsResponse
+import kr.gachon.adigo.data.model.dto.LoginRequest
+import kr.gachon.adigo.data.model.dto.LoginResponse
+import kr.gachon.adigo.data.model.dto.SignUpRequest
+import kr.gachon.adigo.data.model.dto.newPushTokenDto
+import kr.gachon.adigo.data.model.dto.newPushTokenResponseDto
+import kr.gachon.adigo.data.model.dto.smsResponse
 import kr.gachon.adigo.data.remote.ApiService
 import kr.gachon.adigo.data.remote.httpClient
 

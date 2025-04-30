@@ -1,6 +1,16 @@
 package kr.gachon.adigo.data.remote
 
-import kr.gachon.adigo.data.model.*
+import kr.gachon.adigo.data.model.dto.CheckDuplicateEmailResponse
+import kr.gachon.adigo.data.model.dto.CheckDuplicateNumberResponse
+import kr.gachon.adigo.data.model.dto.FriendListResponse
+import kr.gachon.adigo.data.model.dto.LoginRequest
+import kr.gachon.adigo.data.model.dto.LoginResponse
+import kr.gachon.adigo.data.model.dto.RefreshTokenRequest
+import kr.gachon.adigo.data.model.dto.SignUpRequest
+import kr.gachon.adigo.data.model.dto.SignUpResponse
+import kr.gachon.adigo.data.model.dto.newPushTokenDto
+import kr.gachon.adigo.data.model.dto.newPushTokenResponseDto
+import kr.gachon.adigo.data.model.dto.smsResponse
 import retrofit2.Response
 
 class RemoteDataSource(private val apiService: ApiService) : ApiService {
@@ -28,5 +38,8 @@ class RemoteDataSource(private val apiService: ApiService) : ApiService {
 
     override suspend fun registerDeviceToken(request: newPushTokenDto): Response<newPushTokenResponseDto> =
         apiService.registerDeviceToken(request)
+
+    override suspend fun getFriendList(): Response<FriendListResponse> =
+        apiService.getFriendList()
 
 }

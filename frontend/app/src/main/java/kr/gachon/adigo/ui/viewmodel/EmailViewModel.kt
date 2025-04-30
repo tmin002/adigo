@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kr.gachon.adigo.data.remote.ApiService
-import kr.gachon.adigo.data.model.CheckDuplicateEmailResponse
+import kr.gachon.adigo.data.model.dto.CheckDuplicateEmailResponse
 import retrofit2.Response
 
 /**
