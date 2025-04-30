@@ -43,6 +43,7 @@ import kr.gachon.adigo.ui.viewmodel.EmailViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 
 
@@ -145,9 +146,15 @@ fun EmailInputScreen(
     var isLoginError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     
-    val email by emailViewModel.email
-    val emailValid by emailViewModel.emailValid
-    val emailDuplicate by emailViewModel.emailDuplicate
+//    val email by emailViewModel.email
+//    val emailValid by emailViewModel.emailValid
+//    val emailDuplicate by emailViewModel.emailDuplicate
+
+    val email          by emailViewModel.email.collectAsStateWithLifecycle()
+    val emailValid     by emailViewModel.emailValid.collectAsStateWithLifecycle()
+    val emailDuplicate by emailViewModel.emailDuplicate.collectAsStateWithLifecycle()
+
+
 
     // 흔들림 애니메이션 상태
     val shakeState = animateFloatAsState(
