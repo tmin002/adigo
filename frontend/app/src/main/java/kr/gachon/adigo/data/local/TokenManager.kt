@@ -6,7 +6,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import kr.gachon.adigo.data.model.LoginResponse
+import kr.gachon.adigo.data.model.dto.LoginResponse
 import javax.crypto.AEADBadTagException
 
 class TokenManager(context: Context) {

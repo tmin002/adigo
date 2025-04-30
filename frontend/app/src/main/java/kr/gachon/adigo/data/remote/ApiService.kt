@@ -1,6 +1,16 @@
 package kr.gachon.adigo.data.remote
 
-import kr.gachon.adigo.data.model.*
+import kr.gachon.adigo.data.model.dto.CheckDuplicateEmailResponse
+import kr.gachon.adigo.data.model.dto.CheckDuplicateNumberResponse
+import kr.gachon.adigo.data.model.dto.FriendListResponse
+import kr.gachon.adigo.data.model.dto.LoginRequest
+import kr.gachon.adigo.data.model.dto.LoginResponse
+import kr.gachon.adigo.data.model.dto.RefreshTokenRequest
+import kr.gachon.adigo.data.model.dto.SignUpRequest
+import kr.gachon.adigo.data.model.dto.SignUpResponse
+import kr.gachon.adigo.data.model.dto.newPushTokenDto
+import kr.gachon.adigo.data.model.dto.newPushTokenResponseDto
+import kr.gachon.adigo.data.model.dto.smsResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -35,5 +45,8 @@ interface ApiService {
 
     @POST("push/token/register")
     suspend fun registerDeviceToken(@Body request: newPushTokenDto): Response<newPushTokenResponseDto>
+
+    @GET("/member/friend/list")
+    suspend fun getFriendList(): Response<FriendListResponse>
 
 }

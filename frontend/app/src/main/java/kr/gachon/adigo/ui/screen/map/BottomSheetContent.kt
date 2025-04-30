@@ -3,15 +3,25 @@ package kr.gachon.adigo.ui.screen.map
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kr.gachon.adigo.AdigoApplication
+import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
+import androidx.compose.runtime.*
+import androidx.compose.foundation.lazy.items   // ← 추가
+
+
 
 // ===============================
 // Friends 탭 내부 (3가지 화면)
@@ -21,8 +31,20 @@ fun FriendsBottomSheetContent(
     friendScreenState: FriendScreenState,
     onSelectFriend: (String) -> Unit,
     onClickManage: () -> Unit,
-    onClickBack: () -> Unit
+    onClickBack: () -> Unit,
+    friendlistviewModel: FriendListViewModel = remember {
+        FriendListViewModel(
+            remoteDataSource  = AdigoApplication.httpService,
+            repo = AdigoApplication.userDatabaseRepo
+        )
+    }
 ) {
+
+    val friends by friendlistviewModel.friends.collectAsState(emptyList())
+
+    LaunchedEffect(Unit) { friendlistviewModel.refreshFriends() }
+
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -49,18 +71,26 @@ fun FriendsBottomSheetContent(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 예시 친구 목록
-                for (i in 1..10) { //친구 db 가져오기
-                    Text(
-                        text = "친구 $i",
-                        modifier = Modifier
-                            .clickable {
-                                // 프로필로 이동
-                                onSelectFriend("friend_$i")
-                            }
-                            .padding(8.dp)
-                    )
+
+
+                LazyColumn {
+                    items(friends, key = { it.id }) { user ->   // List 버전으로 인식
+                        Text(text = user.name)                  // nickname → name (Entity 필드)
+                    }
                 }
+
+                // 예시 친구 목록
+//                for (i in 1..10) { //친구 db 가져오기
+//                    Text(
+//                        text = "친구 $i",
+//                        modifier = Modifier
+//                            .clickable {
+//                                // 프로필로 이동
+//                                onSelectFriend("friend_$i")
+//                            }
+//                            .padding(8.dp)
+//                    )
+//                }
             }
             is FriendScreenState.Profile -> {
                 Row(
