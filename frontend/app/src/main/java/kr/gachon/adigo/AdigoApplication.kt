@@ -11,7 +11,7 @@ class AdigoApplication : Application() {
             private set
 
         lateinit var httpService: ApiService
-            private set
+
 
     }
 

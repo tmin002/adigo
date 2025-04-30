@@ -25,4 +25,8 @@ class RemoteDataSource(private val apiService: ApiService) : ApiService {
 
     override suspend fun refreshToken(request: RefreshTokenRequest): Response<LoginResponse> =
         apiService.refreshToken(request)
+
+    override suspend fun registerDeviceToken(request: newPushTokenDto): Response<newPushTokenResponseDto> =
+        apiService.registerDeviceToken(request)
+
 }

@@ -14,7 +14,7 @@ class StompWebSocketListener: WebSocketListener() {
             append("Authorization:Bearer ${AdigoApplication.Companion.tokenManager.getJwtToken()}\n")
             append("\n\u0000")
         }
-        webSocket.send(connectFrame)
+       // webSocket.send(connectFrame)
     }
     override fun onMessage(webSocket: WebSocket, text: String) {
         /*

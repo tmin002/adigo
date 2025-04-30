@@ -1,17 +1,23 @@
 package kr.gachon.adigo.ui.viewmodel
 
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kr.gachon.adigo.AdigoApplication
+import kr.gachon.adigo.AdigoApplication.Companion.httpService
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.model.LoginRequest
 import kr.gachon.adigo.data.model.LoginResponse
 import kr.gachon.adigo.data.model.SignUpRequest
+import kr.gachon.adigo.data.model.newPushTokenDto
+import kr.gachon.adigo.data.model.newPushTokenResponseDto
 import kr.gachon.adigo.data.model.smsResponse
 import kr.gachon.adigo.data.remote.ApiService
+import kr.gachon.adigo.data.remote.httpClient
 
 
 class AuthViewModel(private val remoteDataSource: ApiService,
@@ -30,7 +36,7 @@ class AuthViewModel(private val remoteDataSource: ApiService,
                 val body: LoginResponse? = response.body()
                 body?.let { loginResponse ->
                     tokenManager.saveTokens(loginResponse.data)
-
+                    httpService = httpClient.create(tokenManager)
                     withContext(Dispatchers.Main) {
                         onSuccess()
                     }
@@ -42,6 +48,23 @@ class AuthViewModel(private val remoteDataSource: ApiService,
             } else if(response.code() == 500){
                 withContext(Dispatchers.Main) {
                     onError("로그인에 실패하였습니다: ${response.code()}")
+                }
+            }
+        }
+    }
+
+    fun sendDeviceToken(){
+        viewModelScope.launch {
+
+            val token: String? = tokenManager.getDeviceToken()
+
+            val response = remoteDataSource.registerDeviceToken(newPushTokenDto(token.toString()))
+            if (response.isSuccessful){
+                val body: newPushTokenResponseDto? = response.body()
+                Log.d("push","token 성공적으로 보냄: " + body)
+            }else{
+                withContext(Dispatchers.Main) {
+                    Log.d("push","token 보내기 실패")
                 }
             }
         }
@@ -104,7 +127,8 @@ class AuthViewModel(private val remoteDataSource: ApiService,
                 withContext(Dispatchers.Main) {
                     //회원가입 이후 로그인 함수 호출해서 jwt토큰 저장하기.
                     sendLogin(email, password, onSuccess, onError)
-                    onSuccess()
+
+                        //onSuccess()
                 }
             } else {
                 withContext(Dispatchers.Main) {
