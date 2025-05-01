@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
 
         uwbviewModel = UwbLocationViewModel(uwbService)
 
-        friendLocationViewModel = FriendLocationViewModel()
+
 
 
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
@@ -267,7 +267,7 @@ class MainActivity : ComponentActivity() {
                 FinalSignUpScreen(viewModel, email, phonenumber, navController)
             }
             composable(route = Screens.Main.name) {
-                MapScreen(viewModel,navController,friendLocationViewModel)
+                MapScreen(viewModel,navController)
             }
 
 
