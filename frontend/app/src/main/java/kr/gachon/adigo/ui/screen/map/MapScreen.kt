@@ -54,21 +54,23 @@ import com.google.android.gms.location.LocationResult
 import android.os.Looper
 import androidx.compose.foundation.gestures.awaitFirstDown
 import com.google.android.gms.location.Priority
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
-import com.google.maps.android.compose.CameraMoveStartedReason
 import kotlinx.coroutines.delay
+import kr.gachon.adigo.AdigoApplication
+import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 
-fun MapScreen(authViewModel: AuthViewModel, navController  : NavController, friendLocationViewModel: FriendLocationViewModel) {
+fun MapScreen(authViewModel: AuthViewModel, navController  : NavController) {
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberBottomSheetState(initialValue = Collapsed)
     )
     val scope = rememberCoroutineScope()
+    val friendLocationViewModel = FriendLocationViewModel(AdigoApplication.userLocationRepo)
 
+
+    val friends by friendLocationViewModel.friends.collectAsState()
 
     var selectedContent by remember { mutableStateOf(BottomSheetContentType.FRIENDS) }
     var friendScreenState by remember { mutableStateOf<FriendScreenState>(FriendScreenState.List) }
@@ -102,6 +104,8 @@ fun MapScreen(authViewModel: AuthViewModel, navController  : NavController, frie
         if (!hasLocationPermission) {
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
+
+        authViewModel.sendDeviceToken()
     }
 
     //내 현재 위치, 위치추적 여부
@@ -131,8 +135,7 @@ fun MapScreen(authViewModel: AuthViewModel, navController  : NavController, frie
         }
     }
 
-    //친구 현재 위치
-    val friendIcons = remember { mutableStateMapOf<String, BitmapDescriptor?>() }
+
 
     //위치 업데이트 요청
     val fusedLocationClient = remember{ LocationServices.getFusedLocationProviderClient(context)}
@@ -261,16 +264,16 @@ fun MapScreen(authViewModel: AuthViewModel, navController  : NavController, frie
                     },
 
                 ) {
-                    friendLocationViewModel.friends.forEach { user ->
+                    friends.forEach { user ->
                         Marker(
-                            state = MarkerState(position = LatLng(user.latitude, user.longitude)),
-                            title = user.nickname,
+                            state = MarkerState(position = LatLng(user.lat, user.lng)),
+                            title = user.id,
                             onClick = {
 
                                 scope.launch {
                                     cameraPositionState.animate(
                                         update = CameraUpdateFactory.newLatLngZoom(
-                                            LatLng(user.latitude, user.longitude),
+                                            LatLng(user.lat, user.lng),
                                             18f // 친구 위치 확대 레벨
                                         )
                                     )
@@ -279,25 +282,7 @@ fun MapScreen(authViewModel: AuthViewModel, navController  : NavController, frie
                             }
                         )
                     }
-                    //내 위치 마커로 표시하기
-                    currentLocation?.let { location ->
-                        Marker(
-                            state = MarkerState(position = location),
-                            title = "my location",
-                            onClick = {
-                                isTracking = true //만약 마커를 클릭하면 추적 시작
-                                scope.launch {
-                                    cameraPositionState.animate(
-                                        update = CameraUpdateFactory.newLatLngZoom(
-                                            location,
-                                            18f
-                                        )
-                                    )
-                                }
-                                true
-                            }
-                        )
-                    }
+
                 }
             }
         }
