@@ -36,7 +36,7 @@ object UserTransformer : BasedTransformer<User, UserEntity> {
             email        = entity.email,
             nickname     = entity.name,
             profileImage = entity.profileImageURL.takeIf { it.isNotBlank() },
-            authority    = User.Authority.valueOf(entity.authority)   // TODO: entity.authority 가 추가되면 매핑
+            authority    = User.Authority.valueOf(entity.authority)
 
 
         )
