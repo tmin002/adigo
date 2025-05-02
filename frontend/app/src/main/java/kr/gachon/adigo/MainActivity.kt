@@ -38,7 +38,6 @@ import androidx.navigation.navArgument
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import kr.gachon.adigo.data.local.TokenManager
-import kr.gachon.adigo.data.remote.httpClient
 import kr.gachon.adigo.service.uwbService
 import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
 import kr.gachon.adigo.ui.screen.EmailInputScreen
@@ -74,13 +73,10 @@ class MainActivity : ComponentActivity() {
         // 2) 수동 DI: TokenManager 생성
         val tokenManager = AdigoApplication.tokenManager
 
-        //3) 수동 DI : RemoteDataSource 생성
-        val remoteDataSource = httpClient.create(tokenManager)
-
         var uwbService = uwbService(this)
 
         // 3) ViewModel 생성 시점에 주입
-        viewModel = AuthViewModel(remoteDataSource, tokenManager)
+        viewModel = AuthViewModel()
 
         uwbviewModel = UwbLocationViewModel(uwbService)
 
@@ -224,7 +220,7 @@ class MainActivity : ComponentActivity() {
 
                 EmailInputScreen(
                     viewModel,
-                    EmailViewModel(AdigoApplication.httpService),
+                    EmailViewModel(),
                     navController
                 )
 

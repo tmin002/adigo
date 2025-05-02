@@ -13,8 +13,6 @@ import kr.gachon.adigo.data.model.global.User
  * * Model → DB : [modelToEntity]
  *
  * **주의**
- * * `authority` 필드는 현재 DB 스키마에 없으므로 기본값(ROLE_USER)으로 복원합니다.
- *   – Entity 스키마가 확장되면 함께 수정해 주세요.
  * * `profileImage` 가 null 이면 빈 문자열로 저장해 Realm `null` 제한 피함.
  */
 object UserTransformer : BasedTransformer<User, UserEntity> {

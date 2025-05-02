@@ -1,6 +1,7 @@
 package kr.gachon.adigo.data.local.repository
 
 import io.realm.kotlin.Realm
+import io.realm.kotlin.UpdatePolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -24,7 +25,8 @@ class UserLocationRepository(private val realm: Realm) {
         realm.write {
             list.forEach { dto ->
                 copyToRealm(
-                    UserLocationTransformer.modelToEntity(UserLocation(dto.id,dto.lat,dto.lng))
+                    UserLocationTransformer.modelToEntity(UserLocation(dto.id,dto.lat,dto.lng)),
+                    UpdatePolicy.ALL
                 )
             }
         }
