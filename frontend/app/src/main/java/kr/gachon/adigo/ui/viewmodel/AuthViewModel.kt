@@ -7,48 +7,49 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kr.gachon.adigo.AdigoApplication.Companion.httpService
+import kr.gachon.adigo.AdigoApplication
+import kr.gachon.adigo.AdigoApplication.Companion.tokenManager
 import kr.gachon.adigo.data.local.TokenManager
+import kr.gachon.adigo.data.model.dto.CheckDuplicateEmailResponse
 import kr.gachon.adigo.data.model.dto.LoginRequest
 import kr.gachon.adigo.data.model.dto.LoginResponse
 import kr.gachon.adigo.data.model.dto.SignUpRequest
+import kr.gachon.adigo.data.model.dto.SignUpResponse
 import kr.gachon.adigo.data.model.dto.newPushTokenDto
 import kr.gachon.adigo.data.model.dto.newPushTokenResponseDto
 import kr.gachon.adigo.data.model.dto.smsResponse
-import kr.gachon.adigo.data.remote.ApiService
-import kr.gachon.adigo.data.remote.httpClient
 
 
-class AuthViewModel(private val remoteDataSource: ApiService,
-                       private val tokenManager: TokenManager) : ViewModel() {
+
+class AuthViewModel() : ViewModel() {
 
 
     var isLoading: Boolean = false
         private set
+
+    var remoteDataSource = AdigoApplication.authRemote
+    var pushDataSource = AdigoApplication.pushRemote
 
     // 로그인 API
     fun sendLogin(email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
 
         viewModelScope.launch {
             val response = remoteDataSource.login(LoginRequest(email, password))
-            if (response.isSuccessful) {
-                val body: LoginResponse? = response.body()
-                body?.let { loginResponse ->
+            response.onSuccess {
+                val response: LoginResponse? = response.getOrNull()
+                response?.let { loginResponse ->
                     tokenManager.saveTokens(loginResponse.data)
-                    httpService = httpClient.create(tokenManager)
                     withContext(Dispatchers.Main) {
                         onSuccess()
                     }
-                }
-            } else if(response.code() == 400){
-                withContext(Dispatchers.Main) {
-                    onError("로그인에 실패하였습니다: ${response.code()}")
-                }
-            } else if(response.code() == 500){
-                withContext(Dispatchers.Main) {
-                    onError("로그인에 실패하였습니다: ${response.code()}")
+
                 }
             }
+                .onFailure {
+
+                }
+
+
         }
     }
 
@@ -57,15 +58,17 @@ class AuthViewModel(private val remoteDataSource: ApiService,
 
             val token: String? = tokenManager.getDeviceToken()
 
-            val response = remoteDataSource.registerDeviceToken(newPushTokenDto(token.toString()))
-            if (response.isSuccessful){
-                val body: newPushTokenResponseDto? = response.body()
-                Log.d("push","token 성공적으로 보냄: " + body)
-            }else{
-                withContext(Dispatchers.Main) {
-                    Log.d("push","token 보내기 실패")
+            val response = pushDataSource.register(newPushTokenDto(token.toString()))
+            response.onSuccess {
+                val response: newPushTokenResponseDto? = response.getOrNull()
+                Log.d("push","token 성공적으로 보냄: " + response)
                 }
-            }
+                .onFailure {
+                    withContext(Dispatchers.Main) {
+                        Log.d("push","token 보내기 실패")
+                    }
+                }
+
         }
     }
 
@@ -79,15 +82,18 @@ class AuthViewModel(private val remoteDataSource: ApiService,
     fun sendVerificationCode(phonenumber: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             val response = remoteDataSource.sendSMS(phonenumber)
-            if(response.isSuccessful){
+
+            response.onSuccess {
+                val response: smsResponse? = response.getOrNull()
                 withContext(Dispatchers.Main) {
                     onSuccess()
                 }
-            } else {
-                withContext(Dispatchers.Main) {
-                    onError("인증번호 전송에 실패하였습니다: ${response.code()}")
-                }
             }
+                .onFailure {
+                    withContext(Dispatchers.Main) {
+                        onError("인증번호 전송에 실패하였습니다")
+                    }
+                }
 
         }
     }
@@ -95,45 +101,42 @@ class AuthViewModel(private val remoteDataSource: ApiService,
     fun verifyCode(phonenumber: String, code: String, onSuccess: () -> Unit, onError: (String) -> Unit){
         viewModelScope.launch {
             val response = remoteDataSource.verifySMS(phonenumber, code)
-            if(response.isSuccessful){
-                var body: smsResponse? = response.body()
-                body?.let{ smsResponse ->
-                    if(smsResponse.data.success == true){
-                        withContext(Dispatchers.Main) {
-                            onSuccess()
-                        }
-                    }else{
-                        withContext(Dispatchers.Main) {
-                            onError("인증번호 검증가 틀렸습니다543: ${response.code()}")
-                        }
+            response.onSuccess {
+                val response: smsResponse? = response.getOrNull()
+                if(response?.data?.success == true) {
+                    withContext(Dispatchers.Main) {
+                        onSuccess()
+                    }
+                }else{
+                    withContext(Dispatchers.Main) {
+                        onError("인증번호 검증에 실패하였습니다: ${response?.data?.success}")
                     }
                 }
 
-            } else {
+            }.onFailure {
                 withContext(Dispatchers.Main) {
-                    onError("인증번호 검증을 서버에 요청하는것에 실패하였습니다: ${response.code()}")
-                }
+                    onError("인증번호 검증에 실패하였습니다")
                 }
             }
+        }
 
         }
 
     fun signUp(email: String, phone: String, name: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit){
         viewModelScope.launch {
             val response = remoteDataSource.signup(SignUpRequest(email, password, name, phone))
-            if(response.isSuccessful){
-
+            response.onSuccess {
+                val response: SignUpResponse? = response.getOrNull()
                 withContext(Dispatchers.Main) {
-                    //회원가입 이후 로그인 함수 호출해서 jwt토큰 저장하기.
                     sendLogin(email, password, onSuccess, onError)
-
-                        //onSuccess()
                 }
-            } else {
+            } .onFailure {
                 withContext(Dispatchers.Main) {
-                    onError("가입에 실패하였습니다: ${response.code()}")
+                    onError("가입에 실패하였습니다")
                 }
             }
+
+
 
 
         }

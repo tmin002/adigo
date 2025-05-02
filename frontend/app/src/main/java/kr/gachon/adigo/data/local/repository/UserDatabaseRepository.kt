@@ -1,6 +1,7 @@
 package kr.gachon.adigo.data.local.repository
 
 import io.realm.kotlin.Realm
+import io.realm.kotlin.UpdatePolicy
 import io.realm.kotlin.ext.query
 import io.realm.kotlin.notifications.ResultsChange
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +25,7 @@ class UserDatabaseRepository(private val realm: Realm) {
     suspend fun upsertAll(users: List<UserEntity>) {
         realm.write {
             users.forEach { entity ->
-                copyToRealm(entity)
+                copyToRealm(entity, UpdatePolicy.ALL)
             }
         }
     }

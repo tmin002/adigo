@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items   // ← 추가
 // ===============================
 // Friends 탭 내부 (3가지 화면)
 // ===============================
+
 @Composable
 fun FriendsBottomSheetContent(
     friendScreenState: FriendScreenState,
@@ -34,7 +35,6 @@ fun FriendsBottomSheetContent(
     onClickBack: () -> Unit,
     friendlistviewModel: FriendListViewModel = remember {
         FriendListViewModel(
-            remoteDataSource  = AdigoApplication.httpService,
             repo = AdigoApplication.userDatabaseRepo
         )
     }
@@ -121,6 +121,9 @@ fun FriendsBottomSheetContent(
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
+
+
+
                 Text(text = "여기에 친구 추가 / 친구 요청 확인 / 차단 관리 등을 표시합니다.")
             }
         }
