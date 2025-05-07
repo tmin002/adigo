@@ -214,9 +214,6 @@ fun MapScreen(authViewModel: AuthViewModel, navController  : NavController) {
                             onSelectFriend = { friendId ->
                                 friendScreenState = FriendScreenState.Profile(friendId)
                             },
-                            onClickManage = {
-                                friendScreenState = FriendScreenState.Manage
-                            },
                             onClickBack = {
                                 friendScreenState = FriendScreenState.List
                             }

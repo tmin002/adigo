@@ -9,5 +9,4 @@ enum class BottomSheetContentType {
 sealed class FriendScreenState {
     object List : FriendScreenState()
     data class Profile(val friendId: String) : FriendScreenState()
-    object Manage : FriendScreenState()
 }
