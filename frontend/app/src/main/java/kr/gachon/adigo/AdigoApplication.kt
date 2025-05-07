@@ -31,6 +31,8 @@ class AdigoApplication : Application() {
             private set
 
 
+
+
         // public 노출되는 싱글톤
         lateinit var authRemote: AuthRemoteDataSource
             private set
@@ -57,6 +59,7 @@ class AdigoApplication : Application() {
         userDatabaseRepo = UserDatabaseRepository(realm)
 
 
+
         val retrofit     = RetrofitProvider.create(tokenManager)
 
         val authApi = retrofit.create(AuthApi::class.java)
@@ -67,6 +70,7 @@ class AdigoApplication : Application() {
         authRemote = AuthRemoteDataSource(authApi)
         friendRemote = FriendRemoteDataSource(friendApi)
         pushRemote = PushRemoteDataSource(pushApi)
+
 
     }
 }
