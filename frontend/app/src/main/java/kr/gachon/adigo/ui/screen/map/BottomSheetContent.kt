@@ -1,5 +1,6 @@
 package kr.gachon.adigo.ui.screen.map
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,7 +21,16 @@ import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 import androidx.compose.runtime.*
 import androidx.compose.foundation.lazy.items   // ← 추가
-
+import androidx.compose.material.DismissDirection
+import androidx.compose.material.DismissValue
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.rememberDismissState
+import kr.adigo.adigo.database.entity.UserEntity
 
 
 // ===============================
@@ -31,7 +41,6 @@ import androidx.compose.foundation.lazy.items   // ← 추가
 fun FriendsBottomSheetContent(
     friendScreenState: FriendScreenState,
     onSelectFriend: (String) -> Unit,
-    onClickManage: () -> Unit,
     onClickBack: () -> Unit,
     friendlistviewModel: FriendListViewModel = remember {
         FriendListViewModel(
@@ -57,25 +66,16 @@ fun FriendsBottomSheetContent(
 
         when (friendScreenState) {
             is FriendScreenState.List -> {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "친구 목록", style = MaterialTheme.typography.h6)
-                    Text(
-                        text = "관리",
-                        style = MaterialTheme.typography.body2,
-                        modifier = Modifier.clickable { onClickManage() }
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
 
-
+                Header()
 
                 LazyColumn {
-                    items(friends, key = { it.id }) { user ->   // List 버전으로 인식
-                        Text(text = user.name)                  // nickname → name (Entity 필드)
+                    items(friends, key = { it.id }) { user ->
+                        FriendListItem(
+                            user = user,
+                            onClick = { onSelectFriend(user.email) },
+                            onDelete = { friendlistviewModel.deleteFriend(user) }
+                        )
                     }
                 }
 
@@ -109,23 +109,7 @@ fun FriendsBottomSheetContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = "이곳에 친구 프로필 상세 정보를 표시합니다.")
             }
-            is FriendScreenState.Manage -> {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "친구 관리", style = MaterialTheme.typography.h6)
-                    Text(
-                        text = "뒤로",
-                        modifier = Modifier.clickable { onClickBack() }
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
 
-
-
-                Text(text = "여기에 친구 추가 / 친구 요청 확인 / 차단 관리 등을 표시합니다.")
-            }
         }
     }
 }
@@ -196,3 +180,64 @@ fun DragHandle() {
         )
     }
 }
+
+@Composable
+private fun Header() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = "친구 목록", style = MaterialTheme.typography.h6)
+
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
+@Composable
+private fun FriendListItem(
+    user: UserEntity,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 왼쪽 – 아바타(이니셜)
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colors.primary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(user.name.first().uppercaseChar().toString())
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        // 가운데 – 이름
+        Text(
+            text = user.name,
+            style = MaterialTheme.typography.subtitle1,
+            modifier = Modifier.weight(1f)     // 남은 공간 사용
+        )
+
+        // 오른쪽 – 삭제 아이콘
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "삭제",
+                tint = MaterialTheme.colors.error
+            )
+        }
+    }
+}
+

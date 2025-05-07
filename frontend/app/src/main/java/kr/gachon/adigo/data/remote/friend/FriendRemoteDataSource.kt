@@ -6,4 +6,6 @@ class FriendRemoteDataSource  (
     private val api: FriendApi
 ) {
     suspend fun friendList() = safeCall { api.friendList() }
+    suspend fun deleteFriend(friendEmail: String) = safeCall { api.deleteFriend(friendEmail) }
+
 }
