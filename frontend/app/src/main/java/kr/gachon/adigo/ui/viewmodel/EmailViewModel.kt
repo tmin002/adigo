@@ -1,5 +1,6 @@
 package kr.gachon.adigo.ui.viewmodel
 
+import android.util.Log
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,16 +11,20 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kr.gachon.adigo.data.remote.ApiService
+import kr.gachon.adigo.AdigoApplication
+import kr.gachon.adigo.data.local.transformer.UserTransformer
 import kr.gachon.adigo.data.model.dto.CheckDuplicateEmailResponse
+import kr.gachon.adigo.data.model.dto.FriendListResponse
+import kr.gachon.adigo.data.model.global.User
 import retrofit2.Response
+import kotlin.collections.orEmpty
 
 /**
  * 400 ms 디바운스로 이메일 중복-검사를 수행하는 ViewModel (DI 프레임워크 X).
  */
-class EmailViewModel(
-    private val remoteDataSource: ApiService          // 호출용 API
-) : ViewModel() {
+class EmailViewModel() : ViewModel() {
+
+    private val remoteDataSource = AdigoApplication.authRemote
 
     /* ───────────── UI → ViewModel 원본 입력 ───────────── */
     private val _emailInput = MutableStateFlow("")
@@ -48,16 +53,21 @@ class EmailViewModel(
                         return@collectLatest
                     }
 
-                    /* (B) 서버 중복-검사 */
-                    runCatching {
-                        remoteDataSource.checkDuplicateEmail(current)
-                    }.onSuccess { response: Response<CheckDuplicateEmailResponse> ->
-                        _emailDuplicate.value = if (response.isSuccessful) {
-                            response.body()?.data?.duplicated ?: false
-                        } else false
-                    }.onFailure {
-                        _emailDuplicate.value = false   // 네트워크 예외 → 중복 아님
+                    val result = remoteDataSource.duplicatedEmail(current)
+                    Log.d("emailcheck", result.toString())
+                    result.onSuccess {
+                        val response: CheckDuplicateEmailResponse? = result.getOrNull()
+                        Log.d("emailcheck", response.toString())
+                        if(response?.data?.duplicated == false){
+                            _emailDuplicate.value = false
+                        }else{
+                            _emailDuplicate.value = true
+                        }
                     }
+                        .onFailure {
+
+                        }
+
                 }
         }
     }
