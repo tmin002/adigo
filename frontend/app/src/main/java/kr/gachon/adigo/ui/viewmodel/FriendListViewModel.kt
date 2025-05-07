@@ -3,6 +3,7 @@ package kr.gachon.adigo.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.data.local.repository.UserDatabaseRepository
 import kr.gachon.adigo.data.local.transformer.UserTransformer
@@ -29,10 +30,10 @@ class FriendListViewModel(
                 val entities = listDto?.data
                     ?.map { dto ->
                         val user = User(           // DTO → 도메인
-                            email        = dto.email,
-                            nickname     = dto.nickname,
+                            email = dto.email,
+                            nickname = dto.nickname,
                             profileImage = dto.profileImage,
-                            authority    = dto.authority
+                            authority = dto.authority
                         )
                         UserTransformer.modelToEntity(user)   // 도메인 → Entity
                     }.orEmpty()
@@ -43,6 +44,17 @@ class FriendListViewModel(
 
                 }
 
+        }
+    }
+
+
+    fun deleteFriend(friend: UserEntity) {
+        viewModelScope.launch {
+            val result = remoteDataSource.deleteFriend(friend.email)
+            repo.delete(friend.id)
+            result.onSuccess {
+
+            }
         }
     }
 }
