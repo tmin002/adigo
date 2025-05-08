@@ -8,7 +8,6 @@ import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.data.local.repository.UserDatabaseRepository
 import kr.gachon.adigo.data.local.transformer.UserTransformer
 import kr.gachon.adigo.data.model.dto.FriendListResponse  // 서버 DTO
-import kr.gachon.adigo.data.model.dto.ProfileResponse
 import kr.gachon.adigo.data.model.global.User     // 도메인 모델
 import kr.gachon.adigo.data.remote.friend.FriendApi
 
@@ -52,6 +51,16 @@ class FriendListViewModel(
         viewModelScope.launch {
             val result = remoteDataSource.deleteFriend(friend.email)
             repo.delete(friend.id)
+            result.onSuccess {
+
+            }
+        }
+    }
+
+    fun addFriend(email: String) {
+        viewModelScope.launch {
+            var result = remoteDataSource.addFriend(email) // POST /friends/{email}
+
             result.onSuccess {
 
             }

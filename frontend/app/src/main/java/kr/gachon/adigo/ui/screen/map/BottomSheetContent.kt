@@ -1,6 +1,5 @@
 package kr.gachon.adigo.ui.screen.map
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,13 +20,17 @@ import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 import androidx.compose.runtime.*
 import androidx.compose.foundation.lazy.items   // ← 추가
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.TextButton
+import androidx.compose.material.TextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.rememberDismissState
 import kr.adigo.adigo.database.entity.UserEntity
@@ -44,16 +47,13 @@ fun FriendsBottomSheetContent(
     onSelectFriend: (String) -> Unit,
     onClickBack: () -> Unit,
     friendlistviewModel: FriendListViewModel = remember {
-        FriendListViewModel(
-            repo = AdigoApplication.userDatabaseRepo
-        )
+        FriendListViewModel(repo = AdigoApplication.userDatabaseRepo)
     }
 ) {
-
     val friends by friendlistviewModel.friends.collectAsState(emptyList())
+    var showAddDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { friendlistviewModel.refreshFriends() }
-
 
     Column(
         modifier = Modifier
@@ -62,13 +62,14 @@ fun FriendsBottomSheetContent(
             .background(Color.White.copy(alpha = 0.7f))
             .padding(16.dp)
     ) {
-        // 드래그 핸들
         DragHandle()
 
         when (friendScreenState) {
             is FriendScreenState.List -> {
+                Header(onAddFriendClick = { showAddDialog = true })
 
-                Header()
+
+
 
                 LazyColumn {
                     items(friends, key = { it.id }) { user ->
@@ -79,19 +80,6 @@ fun FriendsBottomSheetContent(
                         )
                     }
                 }
-
-                // 예시 친구 목록
-//                for (i in 1..10) { //친구 db 가져오기
-//                    Text(
-//                        text = "친구 $i",
-//                        modifier = Modifier
-//                            .clickable {
-//                                // 프로필로 이동
-//                                onSelectFriend("friend_$i")
-//                            }
-//                            .padding(8.dp)
-//                    )
-//                }
             }
             is FriendScreenState.Profile -> {
                 Row(
@@ -110,10 +98,55 @@ fun FriendsBottomSheetContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = "이곳에 친구 프로필 상세 정보를 표시합니다.")
             }
-
         }
     }
+
+    if (showAddDialog) {
+        AddFriendDialog(
+            onAdd = { email ->
+                friendlistviewModel.addFriend(email)
+                showAddDialog = false
+            },
+            onDismiss = { showAddDialog = false }
+        )
+    }
 }
+
+@Composable
+private fun AddFriendDialog(
+    onAdd: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("친구 추가") },
+        text = {
+            Column {
+                Text("추가할 친구의 이메일을 입력하세요.")
+                Spacer(Modifier.height(8.dp))
+                TextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    singleLine = true,
+                    placeholder = { Text("example@email.com") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = isValid,
+                onClick = { onAdd(email) }
+            ) { Text("추가") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("취소") }
+        }
+    )
+}
+
 
 @Composable
 fun MyPageBottomSheetContent() {
@@ -251,13 +284,20 @@ fun DragHandle() {
 }
 
 @Composable
-private fun Header() {
+private fun Header(onAddFriendClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = "친구 목록", style = MaterialTheme.typography.h6)
+
+        IconButton(onClick = onAddFriendClick) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "친구 추가"
+            )
+        }
 
     }
     Spacer(modifier = Modifier.height(8.dp))
