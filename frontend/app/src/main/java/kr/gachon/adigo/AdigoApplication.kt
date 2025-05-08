@@ -48,7 +48,6 @@ class AdigoApplication : Application() {
             private set
         lateinit var userLocationWebSocketSender: UserLocationWebSocketSender
             private set
-
         lateinit var authRemote: AuthRemoteDataSource
             private set
         lateinit var friendRemote: FriendRemoteDataSource
