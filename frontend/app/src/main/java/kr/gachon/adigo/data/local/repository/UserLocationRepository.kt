@@ -31,4 +31,16 @@ class UserLocationRepository(private val realm: Realm) {
             }
         }
     }
+
+    /** 친구 위치 목록을 UserLocationDto로 변환하여 Flow로 노출 */
+    val friends: Flow<List<UserLocationDto>> =
+        locationsFlow().map { list ->
+            list.map { entity ->
+                UserLocationDto(
+                    id = entity.id,
+                    lat = entity.lat,
+                    lng = entity.lng
+                )
+            }
+        }.flowOn(Dispatchers.IO)
 }

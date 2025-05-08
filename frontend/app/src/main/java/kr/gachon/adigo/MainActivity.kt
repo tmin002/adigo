@@ -43,6 +43,7 @@ import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
 import kr.gachon.adigo.ui.screen.EmailInputScreen
 import kr.gachon.adigo.ui.screen.FinalSignUpScreen
 import kr.gachon.adigo.ui.screen.Screens
+import kr.gachon.adigo.ui.screen.addWebSocketTestRoute
 import kr.gachon.adigo.ui.screen.map.MapScreen
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
@@ -216,28 +217,21 @@ class MainActivity : ComponentActivity() {
             composable(
                 route = Screens.SignIn.name
             ) {
-
-
                 EmailInputScreen(
                     viewModel,
                     EmailViewModel(),
                     navController
                 )
-
-
             }
             composable(
                 route = Screens.VerifyCode.name + "/{Email}"+"/{phonenumber}",
                 arguments = listOf(
                     navArgument("Email") { type = NavType.StringType },
-                    navArgument("phonenumber") { type = NavType.StringType } // <<< phonenumber 인자 정의 추가
+                    navArgument("phonenumber") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                // 3. 인자 가져오기: 정의된 키("Email", "phonenumber")를 사용하여 두 인자 모두 가져옴
                 val email = backStackEntry.arguments?.getString("Email") ?: ""
-                val phonenumber = backStackEntry.arguments?.getString("phonenumber") ?: "" // <<< phonenumber 인자 가져오기 추가
-
-
+                val phonenumber = backStackEntry.arguments?.getString("phonenumber") ?: ""
                 VerificationCodeScreen(
                     viewModel, email, phonenumber, navController,
                     onBackPress =
@@ -245,28 +239,23 @@ class MainActivity : ComponentActivity() {
                             navController.popBackStack()
                         },
                 )
-
             }
             composable(
-                // route 패턴 수정: '+' 를 '/' 로 변경
                 route = Screens.FinalSignUp.name + "/{Email}/{phonenumber}",
                 arguments = listOf(
                     navArgument("Email") { type = NavType.StringType },
-                    navArgument("phonenumber") { type = NavType.StringType } // 인자 정의는 그대로 유지
+                    navArgument("phonenumber") { type = NavType.StringType }
                 )
             ){ backStackEntry ->
-                // 인자 가져오기
                 val email = backStackEntry.arguments?.getString("Email") ?: ""
                 val phonenumber = backStackEntry.arguments?.getString("phonenumber") ?: ""
-
-                // FinalSignUpScreen 호출 (이전 코드에서처럼 ViewModel, 인자, NavController 전달)
                 FinalSignUpScreen(viewModel, email, phonenumber, navController)
             }
             composable(route = Screens.Main.name) {
                 MapScreen(viewModel,navController)
             }
-
-
+            // Register the websocket_test route
+            addWebSocketTestRoute(navController)
         }
 
 
