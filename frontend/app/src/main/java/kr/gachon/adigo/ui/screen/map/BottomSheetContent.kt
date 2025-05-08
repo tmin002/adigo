@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.rememberDismissState
 import kr.adigo.adigo.database.entity.UserEntity
+import androidx.compose.material.Switch
 
 
 // ===============================
@@ -116,17 +117,85 @@ fun FriendsBottomSheetContent(
 
 @Composable
 fun MyPageBottomSheetContent() {
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
-            .height(400.dp)
-            .background(Color.White.copy(alpha = 0.7f))
-            .padding(16.dp)
+            .background(Color.White.copy(alpha = 0.95f))
+            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        DragHandle()
-        Text(text = "마이페이지", style = MaterialTheme.typography.h6)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "여기에 마이페이지 관련 정보를 표시합니다.")
+        item {
+            DragHandle()
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 위치 정보 그룹
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF2F2F7))
+                    .padding(16.dp)
+            ) {
+                Text("나의 위치", style = MaterialTheme.typography.subtitle1)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("위치: 대한민국, 경기도", style = MaterialTheme.typography.body1)
+                Text("기기: 이 Android", style = MaterialTheme.typography.body1)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("나의 위치 공유", style = MaterialTheme.typography.body1)
+                    Switch(checked = true, onCheckedChange = {})
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 알림 그룹
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF2F2F7))
+                    .padding(16.dp)
+            ) {
+                Text("알림", style = MaterialTheme.typography.subtitle1)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("친구 요청 허용", style = MaterialTheme.typography.body1)
+                    Switch(checked = true, onCheckedChange = {})
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 링크 그룹
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF2F2F7))
+                    .padding(16.dp)
+            ) {
+                Text("‘나의 찾기’ 알림 사용자화", color = MaterialTheme.colors.primary)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("추적 알림 사용자화", color = MaterialTheme.colors.primary)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 하단 텍스트
+            Text(
+                "친구 돕기",
+                color = MaterialTheme.colors.primary,
+//                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        }
     }
 }
 
@@ -240,4 +309,3 @@ private fun FriendListItem(
         }
     }
 }
-
