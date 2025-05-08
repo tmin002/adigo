@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
 
 
     <uses-feature
@@ -42,15 +44,24 @@
             </intent-filter>
         </activity>
 
+        <!-- WebSocket 테스트 액티비티 등록 -->
+        <activity android:name="kr.gachon.adigo.ui.screen.WebSocketTestActivity" />
+
         <service
             android:name=".service.PushNotificationService"
-            android:exported="false">
+            android:exported="false"
+            >
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
 
 
+
+        <service
+            android:name=".background.UserLocationProviderService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
