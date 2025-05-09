@@ -11,7 +11,7 @@ class StompWebSocketListener: WebSocketListener() {
             append("CONNECT\n")
             append("accept-version:1.1,1.2\n")
             append("heart-beat:0,0\n")
-            append("Authorization:Bearer ${AdigoApplication.Companion.tokenManager.getJwtToken()}\n")
+            append("Authorization:Bearer ${AdigoApplication.AppContainer.tokenManager.getJwtToken()}\n")
             append("\n\u0000")
         }
        // webSocket.send(connectFrame)

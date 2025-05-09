@@ -72,11 +72,11 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     val scope = rememberCoroutineScope()
 
     // Get WebSocket components from Application
-    val stompClient = remember { AdigoApplication.stompWebSocketClient }
-    val locationReceiver = remember { AdigoApplication.userLocationWebSocketReceiver }
-    val locationSender = remember { AdigoApplication.userLocationWebSocketSender }
+    val stompClient = remember { AdigoApplication.AppContainer.stompClient }
+    val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
+    val locationSender = remember { AdigoApplication.AppContainer.wsSender }
 
-    val friendLocationViewModel = FriendLocationViewModel(AdigoApplication.userLocationRepo)
+    val friendLocationViewModel = FriendLocationViewModel(AdigoApplication.AppContainer.userLocationRepo)
     val friends by friendLocationViewModel.friends.collectAsState()
 
     var selectedContent by remember { mutableStateOf(BottomSheetContentType.FRIENDS) }

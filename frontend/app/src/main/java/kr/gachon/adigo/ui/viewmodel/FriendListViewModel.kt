@@ -17,7 +17,7 @@ class FriendListViewModel(
 
     /** UI-계층에서 구독할 Flow */
     val friends = repo.friendsFlow
-    private val remoteDataSource = AdigoApplication.friendRemote
+    private val remoteDataSource = AdigoApplication.AppContainer.friendRemote
 
     /** 서버에서 친구 목록을 받아 DB 에 반영 */
     fun refreshFriends() {

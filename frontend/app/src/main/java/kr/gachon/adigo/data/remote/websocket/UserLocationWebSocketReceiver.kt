@@ -1,6 +1,7 @@
 package kr.gachon.adigo.data.remote.websocket
 
 import android.util.Log
+import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import kotlinx.coroutines.CoroutineScope
@@ -15,7 +16,6 @@ import kotlinx.coroutines.withContext
 import kr.gachon.adigo.data.local.repository.UserLocationRepository
 import kr.gachon.adigo.data.model.dto.FriendsLocationResponseDto
 import kr.gachon.adigo.data.model.global.UserLocationDto // Reusing app's DTO for repository
-import kr.gachon.adigo.data.model.dto.FriendLocationDto // Server's DTO
 
 class UserLocationWebSocketReceiver(
     private val stompClient: StompWebSocketClient,
@@ -39,22 +39,18 @@ class UserLocationWebSocketReceiver(
 
         // Collect messages from the client's flow
         receiverJob = stompClient.messageFlow
+            .onEach { (destination, body) ->
+                Log.d(TAG, "▲ inbound [$destination] $body")   // <-- 꼭 찍어보세요
+            }
             .filter { (destination, _) ->
-                // Only process messages for the friend location destination
-                destination == FRIENDS_LOCATION_RESPONSE_DESTINATION
+                destination.endsWith("friendsLocationResponse")   // 가장 안전
             }
             .onEach { (_, body) ->
-                // Process the message body
-                coroutineScope.launch {
-                    handleFriendsLocationResponse(body)
-                }
+                // onEach 안 자체가 이미 코루틴이므로 launch 필요 없음
+                handleFriendsLocationResponse(body)
             }
-            .catch { cause ->
-                // Handle any errors in the flow processing
-                Log.e(TAG, "Error in message flow", cause)
-                // Depending on the error, might want to restart listening or reconnect
-            }
-            .launchIn(coroutineScope) // Launch collecting in the provided scope
+            .catch { Log.e(TAG, "Error in message flow", it) }
+            .launchIn(coroutineScope)
 
         Log.d(TAG, "UserLocationWebSocketReceiver listening job launched.")
     }
@@ -72,15 +68,17 @@ class UserLocationWebSocketReceiver(
     private suspend fun handleFriendsLocationResponse(jsonBody: String) {
         try {
             // Parse the JSON body into the DTO
-            val responseDto = gson.fromJson(jsonBody, FriendsLocationResponseDto::class.java)
-            Log.v(TAG, "Parsed FriendsLocationResponseDto: $responseDto")
+            //val responseDto = gson.fromJson(jsonBody, FriendsLocationResponseDto::class.java)
+            val listType = object : TypeToken<List<UserLocationDto>>() {}.type
+            val friendDtos: List<UserLocationDto> = gson.fromJson(jsonBody, listType)
+            Log.v(TAG, "Parsed FriendsLocationResponseDto: $friendDtos")
 
             // Map the server's DTO list (FriendLocationDto) to the app's repository DTO list (UserLocationDto)
-            val userLocationDtos = responseDto.friends.map { friendDto ->
+            val userLocationDtos = friendDtos.map { friendDto ->
                 UserLocationDto(
                     id = friendDto.id,
-                    lat = friendDto.latitude,
-                    lng = friendDto.longitude
+                    lat = friendDto.lat,
+                    lng = friendDto.lng
                 )
             }
 
@@ -96,4 +94,5 @@ class UserLocationWebSocketReceiver(
             Log.e(TAG, "Error processing friend location message", e)
         }
     }
+
 } 

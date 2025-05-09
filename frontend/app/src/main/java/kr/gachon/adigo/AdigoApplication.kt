@@ -21,92 +21,78 @@ import kr.gachon.adigo.data.remote.push.PushRemoteDataSource
 import kr.gachon.adigo.data.remote.websocket.StompWebSocketClient
 import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketReceiver
 import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketSender
+import retrofit2.Retrofit
 
 class AdigoApplication : Application() {
 
-    private val applicationScope = CoroutineScope(SupervisorJob())
-
-    companion object {
+    /** 모든 싱글턴을 담아 둘 전역 컨테이너 */
+    object AppContainer {
+        // ─── 런타임에 채워짐 ───
         lateinit var tokenManager: TokenManager
-            private set
-
         lateinit var realm: Realm
-            private set
+        lateinit var gson: Gson
 
         lateinit var userLocationRepo: UserLocationRepository
-            private set
-
         lateinit var userDatabaseRepo: UserDatabaseRepository
-            private set
 
-        lateinit var gson: Gson
-            private set
-
-        lateinit var stompWebSocketClient: StompWebSocketClient
-            private set
-        lateinit var userLocationWebSocketReceiver: UserLocationWebSocketReceiver
-            private set
-        lateinit var userLocationWebSocketSender: UserLocationWebSocketSender
-            private set
+        lateinit var retrofit: Retrofit
         lateinit var authRemote: AuthRemoteDataSource
-            private set
         lateinit var friendRemote: FriendRemoteDataSource
-            private set
         lateinit var pushRemote: PushRemoteDataSource
-            private set
+
+        lateinit var stompClient: StompWebSocketClient
+        lateinit var wsReceiver: UserLocationWebSocketReceiver
+        lateinit var wsSender: UserLocationWebSocketSender
     }
 
     override fun onCreate() {
         super.onCreate()
 
-        tokenManager = TokenManager(this)
-        gson = Gson()
+        val container = AppContainer               // 짧게 alias
+        container.tokenManager = TokenManager(this)
+        container.gson         = Gson()
 
-        val config = RealmConfiguration
-            .Builder(schema = setOf(
-                UserLocationEntity::class,
-                UserEntity::class))
-            .deleteRealmIfMigrationNeeded()
-            .build()
-        realm = Realm.open(config)
-
-        userLocationRepo = UserLocationRepository(realm)
-        userDatabaseRepo = UserDatabaseRepository(realm)
-
-        val okHttpClient = RetrofitProvider.getOkHttpClient(tokenManager)
-        val retrofit     = RetrofitProvider.create(tokenManager)
-
-        val authApi = retrofit.create(AuthApi::class.java)
-        val friendApi = retrofit.create(FriendApi::class.java)
-        val pushApi = retrofit.create(PushApi::class.java)
-
-        authRemote = AuthRemoteDataSource(authApi)
-        friendRemote = FriendRemoteDataSource(friendApi)
-        pushRemote = PushRemoteDataSource(pushApi)
-
-        stompWebSocketClient = StompWebSocketClient(
-            websocketUrl = "wss://adigo.site/api/ws/chat/websocket",
-            tokenManager = tokenManager,
-            okHttpClient = okHttpClient,
-            applicationScope = applicationScope
+        // ─ Realm ─
+        container.realm = Realm.open(
+            RealmConfiguration.Builder(
+                setOf(UserLocationEntity::class, UserEntity::class)
+            ).deleteRealmIfMigrationNeeded()
+                .build()
         )
+        container.userLocationRepo = UserLocationRepository(container.realm)
+        container.userDatabaseRepo = UserDatabaseRepository(container.realm)
 
-        userLocationWebSocketReceiver = UserLocationWebSocketReceiver(
-            stompClient = stompWebSocketClient,
-            userLocationRepository = userLocationRepo,
-            gson = gson,
-            coroutineScope = applicationScope
+        // ─ Retrofit & Remote DS ─
+        val okHttp = RetrofitProvider.getOkHttpClient(container.tokenManager)
+        container.retrofit = RetrofitProvider.create(container.tokenManager)
+
+        container.authRemote   = AuthRemoteDataSource(container.retrofit.create(AuthApi::class.java))
+        container.friendRemote = FriendRemoteDataSource(container.retrofit.create(FriendApi::class.java))
+        container.pushRemote   = PushRemoteDataSource(container.retrofit.create(PushApi::class.java))
+
+        // ─ WebSocket ─
+        val appScope = CoroutineScope(SupervisorJob())
+        container.stompClient = StompWebSocketClient(
+            websocketUrl   = "wss://adigo.site/api/ws/chat/websocket",
+            tokenManager   = container.tokenManager,
+            okHttpClient   = okHttp,
+            applicationScope = appScope
         )
-
-        userLocationWebSocketSender = UserLocationWebSocketSender(
-            stompClient = stompWebSocketClient,
-            gson = gson
+        container.wsReceiver = UserLocationWebSocketReceiver(
+            stompClient = container.stompClient,
+            userLocationRepository = container.userLocationRepo,
+            gson = container.gson,
+            coroutineScope = appScope
+        )
+        container.wsSender = UserLocationWebSocketSender(
+            stompClient = container.stompClient,
+            gson = container.gson
         )
     }
 
     override fun onTerminate() {
         super.onTerminate()
-        realm.close()
-        stompWebSocketClient.shutdown()
+        AppContainer.realm.close()
+        AppContainer.stompClient.shutdown()
     }
 }

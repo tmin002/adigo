@@ -47,7 +47,7 @@ fun FriendsBottomSheetContent(
     onSelectFriend: (String) -> Unit,
     onClickBack: () -> Unit,
     friendlistviewModel: FriendListViewModel = remember {
-        FriendListViewModel(repo = AdigoApplication.userDatabaseRepo)
+        FriendListViewModel(repo = AdigoApplication.AppContainer.userDatabaseRepo)
     }
 ) {
     val friends by friendlistviewModel.friends.collectAsState(emptyList())

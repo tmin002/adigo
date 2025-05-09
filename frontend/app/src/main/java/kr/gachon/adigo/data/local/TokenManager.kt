@@ -10,7 +10,9 @@ import kr.gachon.adigo.data.model.dto.LoginResponse
 import javax.crypto.AEADBadTagException
 
 class TokenManager(context: Context) {
-    private val prefs = try {
+
+    /* ───────── 1) 암호화 prefs : JWT / Refresh ───────── */
+    private val securePrefs = try {
         EncryptedSharedPreferences.create(
             context,
             "jwt_prefs",
@@ -21,7 +23,7 @@ class TokenManager(context: Context) {
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     } catch (e: AEADBadTagException) {
-        context.deleteSharedPreferences("jwt_prefs") // 손상된 prefs 삭제
+        context.deleteSharedPreferences("jwt_prefs")
         EncryptedSharedPreferences.create(
             context,
             "jwt_prefs",
@@ -33,52 +35,57 @@ class TokenManager(context: Context) {
         )
     }
 
+    /* ───────── 2) 일반 prefs : FCM 디바이스 토큰 ───────── */
+    private val plainPrefs =
+        context.getSharedPreferences("plain_prefs", Context.MODE_PRIVATE)
+
     companion object {
-        private const val JWT_KEY = "jwt_token"
-        private const val REFRESH_TOKEN_KEY = "refresh_token"
+        private const val JWT_KEY          = "jwt_token"
+        private const val REFRESH_TOKEN_KEY= "refresh_token"
         private const val DEVICE_TOKEN_KEY = "device_token"
     }
 
-    fun saveTokens(response: LoginResponse.Response) {
-        prefs.edit().apply {
-            putString(JWT_KEY, response.accessToken)
-            putString(REFRESH_TOKEN_KEY, response.refreshToken)
-            apply()
-        }
+    /* ───────── JWT / Refresh 저장 ───────── */
+    fun saveTokens(res: LoginResponse.Response) {
+        securePrefs.edit().apply {
+            putString(JWT_KEY,          res.accessToken)
+            putString(REFRESH_TOKEN_KEY,res.refreshToken)
+        }.apply()
     }
 
+    /* ───────── 디바이스 토큰 저장 (일반 prefs) ───────── */
     fun saveDeviceToken(token: String) {
-        prefs.edit().apply {
-            putString(DEVICE_TOKEN_KEY, token)
-            apply()
-        }
+        val ok = plainPrefs.edit()
+            .putString(DEVICE_TOKEN_KEY, token)
+            .commit()             // 동기 저장
+        Log.d("TokenManager", "saveDeviceToken() result=$ok value=$token")
     }
 
-    fun getDeviceToken(): String? = prefs.getString(DEVICE_TOKEN_KEY, null)
+    /* ───────── 디바이스 토큰 조회 ───────── */
+    fun getDeviceToken(): String? =
+        plainPrefs.getString(DEVICE_TOKEN_KEY, null).also {
+            Log.d("TokenManager", "getDeviceToken() = $it")
+        }
 
+    /* ───────── JWT 만료 여부 ───────── */
     fun isTokenExpired(): Boolean {
         val token = getJwtToken() ?: return true
         return try {
-            val decodedJWT = JWT.decode(token)
-            val expirationDate = decodedJWT.expiresAt
-            val isExpired = expirationDate.before(java.util.Date())
-
-            if(isExpired) {
-                Log.d("TokenManager", "Token is expired")
-            } else {
-                Log.d("TokenManager", "Token is not expired")
+            val exp = JWT.decode(token).expiresAt
+            exp == null || exp.before(java.util.Date()).also {
+                Log.d("TokenManager", "Token expired? $it")
             }
-            isExpired
         } catch (e: JWTDecodeException) {
             true
         }
     }
 
-    fun getJwtToken(): String? = prefs.getString(JWT_KEY, null)
+    /* ───────── 기타 getters ───────── */
+    fun getJwtToken(): String?     = securePrefs.getString(JWT_KEY, null)
+    fun getRefreshToken(): String? = securePrefs.getString(REFRESH_TOKEN_KEY, null)
 
-    fun getRefreshToken(): String? = prefs.getString(REFRESH_TOKEN_KEY, null)
-
+    /* ───────── JWT·Refresh 제거 (디바이스 토큰은 유지) ───────── */
     fun clearTokens() {
-        prefs.edit().clear().apply()
+        securePrefs.edit().clear().apply()
     }
 }
