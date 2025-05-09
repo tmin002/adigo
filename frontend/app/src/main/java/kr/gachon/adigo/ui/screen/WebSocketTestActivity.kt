@@ -24,7 +24,7 @@ class WebSocketTestActivity : ComponentActivity() {
 
 @Composable
 fun WebSocketTestScreen() {
-    val stompClient = remember { AdigoApplication.stompWebSocketClient }
+    val stompClient = remember { AdigoApplication.AppContainer.stompClient }
     val coroutineScope = rememberCoroutineScope()
     var log by remember { mutableStateOf("") }
     var destination by remember { mutableStateOf("/user/queue/friendsLocationResponse") }

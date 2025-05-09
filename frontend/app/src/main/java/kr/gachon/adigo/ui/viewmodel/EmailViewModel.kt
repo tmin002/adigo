@@ -24,7 +24,7 @@ import kotlin.collections.orEmpty
  */
 class EmailViewModel() : ViewModel() {
 
-    private val remoteDataSource = AdigoApplication.authRemote
+    private val remoteDataSource = AdigoApplication.AppContainer.authRemote
 
     /* ───────────── UI → ViewModel 원본 입력 ───────────── */
     private val _emailInput = MutableStateFlow("")

@@ -107,6 +107,7 @@ class StompWebSocketClient(
 
     private fun handleStompFrame(frame: String) {
         // Split frame into headers and body
+        Log.d(TAG, "⚡ FRAME >>> $frame")
         val parts = frame.split("\n\n", limit = 2)
         val headersPart = parts.getOrNull(0) ?: return // Malformed frame
         val bodyPart = parts.getOrNull(1)?.trimEnd('\u0000') ?: ""
@@ -177,24 +178,14 @@ class StompWebSocketClient(
     }
 
     private fun resubscribeOnConnect() {
-         if(stompConnected) {
-             applicationScope.launch {
-                 // Iterate over a copy to avoid ConcurrentModificationException
-                 subscriptions.toMap().forEach { (destination, subId) ->
-                     Log.d(TAG, "Resubscribing to $destination with ID $subId")
-                     // Send SUBSCRIBE frame again
-                     val subscribeFrame = buildString {
-                         append("SUBSCRIBE\n")
-                         append("id:$subId\n") // Use the stored subscription ID
-                         append("destination:$destination\n")
-                         // Add acknowledgment header if needed (e.g., ack:client)
-                         append("\n\u0000")
-                     }
-                     webSocket?.send(subscribeFrame)
-                     // Note: No need to add to `subscriptions` map again, it's already there
-                 }
-             }
-         }
+        subscriptions.toMap().forEach { (destination, subId) ->
+            val subscribeFrame = buildString {
+                append("SUBSCRIBE\n")
+                append("id:$subId\n")
+                append("destination:$destination\n\n\u0000")
+            }
+            webSocket?.send(subscribeFrame)
+        }
     }
 
     fun connect() {
@@ -214,7 +205,7 @@ class StompWebSocketClient(
             // Use the custom wsOkHttpClient without the Authorization interceptor
             webSocket = wsOkHttpClient.newWebSocket(request, webSocketListener)
             Log.d(TAG, "WebSocket connection attempt started.")
-            Log.d(TAG, AdigoApplication.tokenManager.getJwtToken()!!)
+            Log.d(TAG, AdigoApplication.AppContainer.tokenManager.getJwtToken()!!)
             val a = 3
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create WebSocket", e)

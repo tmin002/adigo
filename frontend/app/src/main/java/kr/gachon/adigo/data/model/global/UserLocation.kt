@@ -1,6 +1,6 @@
 package kr.gachon.adigo.data.model.global
 
-
+import com.google.gson.annotations.SerializedName
 
 
 /**
@@ -18,9 +18,9 @@ data class UserLocation(
 }
 
 
-class UserLocationDto(
-    override val id: String,
-    val lat: Double,
-    val lng: Double
+data class UserLocationDto(
+    @SerializedName("userId") override val id: String,
+    @SerializedName("latitude") val lat: Double,
+    @SerializedName("longitude") val lng: Double
 
 ): BasedDataTransfterObject
