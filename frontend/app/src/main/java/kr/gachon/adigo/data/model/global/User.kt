@@ -7,7 +7,7 @@ data class User(
     val authority: Authority
 ): BasedManagedModel<UserDTO> {
     override val id: String get() = this.email // 이메일을 PK로 사용
-    var location: UserLocation? = null
+    //var location: UserLocation? = null
 
     override fun getDTO(): UserDTO {
         return UserDTO(id, nickname, email, profileImage, authority)

@@ -1,4 +1,4 @@
-package kr.gachon.adigo.data.model
+package kr.gachon.adigo.data.model.dto
 
 data class LoginResponse(
     val status: Int,

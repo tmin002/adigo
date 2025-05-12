@@ -1,19 +1,22 @@
 package kr.gachon.adigo.ui.viewmodel
 
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
-import kr.gachon.adigo.data.model.global.UserLocation
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kr.gachon.adigo.data.local.entity.UserLocationEntity
+import kr.gachon.adigo.data.local.repository.UserLocationRepository
 
-class FriendLocationViewModel  : ViewModel(){
-    val friends = mutableStateListOf<UserLocation>()
-    init {
-        // 예시: 초기 친구 목록 하드코딩 (실제에선 서버에서 받아옴)
-        friends.addAll(
-            listOf(
-                UserLocation("철수", 37.56, 126.97),
-                UserLocation("영희", 37.55, 126.98),
-                UserLocation("민수", 37.54, 126.96)
+class FriendLocationViewModel(
+    private val repo: UserLocationRepository
+) : ViewModel() {
+
+    val friends: StateFlow<List<UserLocationEntity>> =
+        repo.locationsFlow()
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                emptyList()
             )
-        )
-    }
 }
