@@ -10,7 +10,9 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.MainActivity
 import kr.gachon.adigo.R
@@ -20,13 +22,43 @@ class PushNotificationService : FirebaseMessagingService() {
 
     companion object {
         private const val CHANNEL_ID = "default_channel"
+        private const val TAG = "PushNotificationService"
     }
+
+    // 백그라운드 작업을 위한 코루틴 스코프
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** FCM 알림 수신 */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         val title = remoteMessage.notification?.title ?: "알림"
-        val body  = remoteMessage.notification?.body  ?: "내용 없음"
+        val body = remoteMessage.notification?.body ?: "내용 없음"
+        
+        // 친구 요청 알림인 경우 FriendListViewModel 업데이트
+        if (title.contains("친구 요청") || body.contains("친구 요청")) {
+            Log.d(TAG, "Friend request notification received in ${if (isAppInForeground()) "foreground" else "background"}")
+            
+            // 백그라운드에서 안전하게 실행
+            serviceScope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        AdigoApplication.AppContainer.friendListViewModel.onFriendRequestNotificationReceived()
+                    }
+                    Log.d(TAG, "Successfully refreshed friend requests in background")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to refresh friend requests in background", e)
+                    // 실패 시 재시도 로직을 추가할 수 있습니다
+                }
+            }
+        }
+        
         sendNotification(title, body)
+    }
+
+    /** 앱이 포그라운드에 있는지 확인 */
+    private fun isAppInForeground(): Boolean {
+        val appProcessInfo = android.app.ActivityManager.RunningAppProcessInfo()
+        android.app.ActivityManager.getMyMemoryState(appProcessInfo)
+        return appProcessInfo.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     }
 
     /** 시스템 알림 표시 */
@@ -35,23 +67,23 @@ class PushNotificationService : FirebaseMessagingService() {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         val pendingIntent = PendingIntent.getActivity(
-                this, 0, intent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+            this, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
         )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_arrow)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
+            .setSmallIcon(R.drawable.ic_arrow)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
 
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (manager.getNotificationChannel(CHANNEL_ID) == null) {
             val channel = NotificationChannel(
-                    CHANNEL_ID,
-                    "Default Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
+                CHANNEL_ID,
+                "Default Channel",
+                NotificationManager.IMPORTANCE_DEFAULT
             )
             manager.createNotificationChannel(channel)
         }
@@ -62,6 +94,10 @@ class PushNotificationService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         AdigoApplication.AppContainer.tokenManager.saveDeviceToken(token)
+    }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel() // 서비스가 종료될 때 코루틴 스코프 정리
     }
 }

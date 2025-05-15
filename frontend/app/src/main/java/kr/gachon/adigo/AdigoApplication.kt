@@ -21,6 +21,7 @@ import kr.gachon.adigo.data.remote.push.PushRemoteDataSource
 import kr.gachon.adigo.data.remote.websocket.StompWebSocketClient
 import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketReceiver
 import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketSender
+import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 import retrofit2.Retrofit
 
 class AdigoApplication : Application() {
@@ -43,6 +44,9 @@ class AdigoApplication : Application() {
         lateinit var stompClient: StompWebSocketClient
         lateinit var wsReceiver: UserLocationWebSocketReceiver
         lateinit var wsSender: UserLocationWebSocketSender
+
+        // ViewModels
+        lateinit var friendListViewModel: FriendListViewModel
     }
 
     override fun onCreate() {
@@ -88,6 +92,9 @@ class AdigoApplication : Application() {
             stompClient = container.stompClient,
             gson = container.gson
         )
+
+        // ─ ViewModels ─
+        container.friendListViewModel = FriendListViewModel(container.userDatabaseRepo)
     }
 
     override fun onTerminate() {

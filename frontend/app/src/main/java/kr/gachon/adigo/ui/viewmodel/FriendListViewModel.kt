@@ -124,4 +124,10 @@ class FriendListViewModel(
             }
         }
     }
+
+    /** 푸시 알림을 받았을 때 호출할 메서드 */
+    fun onFriendRequestNotificationReceived() {
+        Log.d(TAG, "Friend request notification received, refreshing friend requests")
+        refreshFriendRequests()
+    }
 }
