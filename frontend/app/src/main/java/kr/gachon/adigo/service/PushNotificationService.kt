@@ -35,7 +35,6 @@ class PushNotificationService : FirebaseMessagingService() {
         val body = remoteMessage.notification?.body ?: "내용 없음"
         
         // 친구 요청 알림인 경우 FriendListViewModel 업데이트
-        if (title.contains("친구 요청") || body.contains("친구 요청")) {
             Log.d(TAG, "Friend request notification received in ${if (isAppInForeground()) "foreground" else "background"}")
             
             // 백그라운드에서 안전하게 실행
@@ -50,7 +49,7 @@ class PushNotificationService : FirebaseMessagingService() {
                     // 실패 시 재시도 로직을 추가할 수 있습니다
                 }
             }
-        }
+
         
         sendNotification(title, body)
     }
