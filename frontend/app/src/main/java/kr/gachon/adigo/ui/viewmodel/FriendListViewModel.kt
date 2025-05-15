@@ -79,9 +79,13 @@ class FriendListViewModel(
         viewModelScope.launch {
             Log.d(TAG, "Deleting friend: ${friend.email}")
             val result = remoteDataSource.deleteFriend(friend.email)
-            result.onSuccess {
-                Log.d(TAG, "Successfully deleted friend")
-                repo.delete(friend.id)
+            result.onSuccess { response ->
+                Log.d(TAG, "Successfully deleted friend, response: $response")
+                if (response.status == 200) {
+                    repo.delete(friend.id)
+                } else {
+                    Log.e(TAG, "Failed to delete friend: ${response.message}")
+                }
             }
             .onFailure { error ->
                 Log.e(TAG, "Failed to delete friend", error)

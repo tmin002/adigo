@@ -25,6 +25,12 @@ class FriendRemoteDataSource  (
         Log.d(TAG, "Calling deleteFriend API for: $friendEmail")
         val response = api.deleteFriend(friendEmail)
         Log.d(TAG, "deleteFriend API response: ${response.isSuccessful}")
+        if (!response.isSuccessful) {
+            Log.e(TAG, "Error response body: ${response.errorBody()?.string()}")
+            Log.e(TAG, "Error code: ${response.code()}")
+        } else {
+            Log.d(TAG, "Success response body: ${response.body()}")
+        }
         response
     }
 
