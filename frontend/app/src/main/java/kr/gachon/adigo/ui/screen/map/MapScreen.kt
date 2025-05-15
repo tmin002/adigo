@@ -34,6 +34,7 @@ import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
 import android.content.Context
 import android.content.Intent
+import android.location.Geocoder
 import com.bumptech.glide.Glide
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -48,6 +49,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlin.coroutines.coroutineContext
 import com.google.android.gms.location.LocationServices
 import android.location.Location
+import android.net.Uri
+import android.os.Build
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
@@ -58,6 +61,9 @@ import kotlinx.coroutines.delay
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 import android.util.Log
+import kr.gachon.adigo.background.UserLocationProviderService
+import java.net.URLEncoder
+import java.util.Locale
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -142,10 +148,10 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
         scope.launch {
             delay(2000) // Give WebSocket a moment to connect
             if (stompClient.stompConnected) { // Check if STOMP is connected
-                 Log.d("MapScreen", "Requesting initial friend locations")
-                 locationSender.requestFriendLocations()
+                Log.d("MapScreen", "Requesting initial friend locations")
+                locationSender.requestFriendLocations()
             } else {
-                 Log.w("MapScreen", "STOMP not connected, skipping initial friend location request")
+                Log.w("MapScreen", "STOMP not connected, skipping initial friend location request")
             }
         }
 
@@ -168,11 +174,11 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
         // A more robust approach involves checking GestureSource or using a custom event handler.
         // For simplicity now, we'll turn it off if it was tracking.
         // A better approach is to set isTracking = false on manual map interaction (map drag, zoom gestures).
-         if (isTracking) {
-             // Adding a slight delay can help distinguish between programmatic moves and user gestures
-             // However, manual gestures might not update `isTracking` state immediately.
-             // The onMapClick listener below is a better place to set isTracking = false
-         }
+        if (isTracking) {
+            // Adding a slight delay can help distinguish between programmatic moves and user gestures
+            // However, manual gestures might not update `isTracking` state immediately.
+            // The onMapClick listener below is a better place to set isTracking = false
+        }
     }
 
     //만약 위치 권한이 있으면 마지막 위치 받아오기 (Initial location)
@@ -182,23 +188,23 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
             // Use GlobalScope or applicationScope if this needs to survive beyond MapScreen lifecycle
             // But typically, you only need last known location when the map screen is active.
             // For this case, LaunchedEffect tied to MapScreen is fine.
-             try {
+            try {
                 val location = fusedLocationClient.lastLocation
-                 location.addOnSuccessListener { loc: Location? ->
-                     loc?.let {
-                         currentLocation = LatLng(it.latitude, it.longitude)
-                         // Option: Start tracking automatically when location is found and permission is granted
-                         // isTracking = true
-                         Log.d("MapScreen", "Got last known location: ${it.latitude}, ${it.longitude}")
-                     } ?: Log.w("MapScreen", "Last known location is null.")
-                 }
-                 .addOnFailureListener { e ->
-                     Log.e("MapScreen", "Failed to get last known location", e)
-                 }
-             } catch (e: SecurityException) {
-                 // This should not happen if hasLocationPermission is true, but good practice to catch
-                 Log.e("MapScreen", "Security exception getting last location", e)
-             }
+                location.addOnSuccessListener { loc: Location? ->
+                    loc?.let {
+                        currentLocation = LatLng(it.latitude, it.longitude)
+                        // Option: Start tracking automatically when location is found and permission is granted
+                        // isTracking = true
+                        Log.d("MapScreen", "Got last known location: ${it.latitude}, ${it.longitude}")
+                    } ?: Log.w("MapScreen", "Last known location is null.")
+                }
+                    .addOnFailureListener { e ->
+                        Log.e("MapScreen", "Failed to get last known location", e)
+                    }
+            } catch (e: SecurityException) {
+                // This should not happen if hasLocationPermission is true, but good practice to catch
+                Log.e("MapScreen", "Security exception getting last location", e)
+            }
         }
     }
 
@@ -222,14 +228,14 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                 // My location tracking: move camera if enabled
                 if (isTracking) {
                     scope.launch {
-                         try {
+                        try {
                             cameraPositionState.animate(
                                 CameraUpdateFactory.newLatLngZoom(newLatLng, 18f) // Adjust zoom as needed
                             )
-                             Log.d("MapScreen", "Camera animated to current location.")
-                         } catch (e: Exception) {
-                             Log.e("MapScreen", "Error animating camera to current location", e)
-                         }
+                            Log.d("MapScreen", "Camera animated to current location.")
+                        } catch (e: Exception) {
+                            Log.e("MapScreen", "Error animating camera to current location", e)
+                        }
                     }
                 }
             }
@@ -248,13 +254,13 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                 Log.d("MapScreen", "Location updates requested.")
             } catch (e: SecurityException) {
                 Log.e("MapScreen", "Security exception requesting location updates", e)
-                 // Handle gracefully - maybe set hasLocationPermission to false
+                // Handle gracefully - maybe set hasLocationPermission to false
             }
         } else {
-             // Permission revoked or not granted
-             fusedLocationClient.removeLocationUpdates(locationCallback)
-             Log.d("MapScreen", "Location updates removed (permission denied).")
-             isTracking = false // Stop tracking if permission is lost
+            // Permission revoked or not granted
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            Log.d("MapScreen", "Location updates removed (permission denied).")
+            isTracking = false // Stop tracking if permission is lost
         }
 
         // Clean up listener when the effect is disposed
@@ -288,14 +294,14 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 friendScreenState = FriendScreenState.Profile(friendId)
                                 // Optional: Move camera to friend's location if available
                                 friends.firstOrNull { it.id == friendId }?.let { friend ->
-                                     scope.launch {
-                                         cameraPositionState.animate(
-                                             update = CameraUpdateFactory.newLatLngZoom(
-                                                 LatLng(friend.lat, friend.lng),
-                                                 18f
-                                             )
-                                         )
-                                     }
+                                    scope.launch {
+                                        cameraPositionState.animate(
+                                            update = CameraUpdateFactory.newLatLngZoom(
+                                                LatLng(friend.lat, friend.lng),
+                                                18f
+                                            )
+                                        )
+                                    }
                                 }
                             },
                             onClickBack = {
@@ -389,6 +395,17 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                                                 18f
                                             )
                                         )
+                                        
+                                        // 현재 위치와 마커 위치로 네이버 지도 길 찾기 실행
+                                        if (currentLocation != null) {
+                                            searchLoadToNaverMap(
+                                                context = context,
+                                                slat = currentLocation!!.latitude,
+                                                slng = currentLocation!!.longitude,
+                                                dlat = marker.position.latitude,
+                                                dlng = marker.position.longitude
+                                            )
+                                        }
                                     }
                                     isTracking = false
                                     true
@@ -440,5 +457,46 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                 }
             )
         }
+    }
+}
+
+private fun searchLoadToNaverMap(context: Context, slat: Double, slng: Double, dlat: Double, dlng: Double) {
+    // 위도, 경도를 주소로 변환
+    val geocoder = Geocoder(context, Locale.KOREAN)
+    val startLocationAddress = geocoder.getFromLocation(slat, slng, 1)
+    val endLocationAddress = geocoder.getFromLocation(dlat, dlng, 1)
+    val encodedStartAddress = encodeAddress(startLocationAddress?.get(0)?.getAddressLine(0).toString().replace("대한민국 ",""))
+    val encodedEndAddress = encodeAddress(endLocationAddress?.get(0)?.getAddressLine(0).toString().replace("대한민국 ",""))
+
+    val url = "nmap://route/car?slat=${slat}&slng=${slng}&sname=${encodedStartAddress}&dlat=${dlat}&dlng=${dlng}&dname=${encodedEndAddress}"
+
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    intent.addCategory(Intent.CATEGORY_BROWSABLE)
+
+    val installCheck = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.packageManager.queryIntentActivities(
+            Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER),
+            PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
+        )
+    } else {
+        context.packageManager.queryIntentActivities(
+            Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER),
+            PackageManager.GET_META_DATA
+        )
+    }
+
+    // 네이버맵이 설치되어 있다면 앱으로 연결, 설치되어 있지 않다면 스토어로 이동
+    if (installCheck.isEmpty()) {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.nhn.android.nmap")))
+    } else {
+        context.startActivity(intent)
+    }
+}
+
+private fun encodeAddress(address: String): String {
+    return try {
+        URLEncoder.encode(address, "UTF-8")
+    } catch (e: Exception) {
+        ""
     }
 }

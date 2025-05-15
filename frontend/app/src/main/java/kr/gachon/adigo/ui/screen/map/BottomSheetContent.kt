@@ -35,6 +35,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.rememberDismissState
 import kr.adigo.adigo.database.entity.UserEntity
 import androidx.compose.material.Switch
+import androidx.compose.material.Divider
+import androidx.compose.material.ButtonDefaults
+import kr.gachon.adigo.data.model.dto.FriendshipRequestLookupDto
+import android.util.Log
 
 
 // ===============================
@@ -51,9 +55,14 @@ fun FriendsBottomSheetContent(
     }
 ) {
     val friends by friendlistviewModel.friends.collectAsState(emptyList())
+    val friendRequests by friendlistviewModel.friendRequests.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { friendlistviewModel.refreshFriends() }
+    LaunchedEffect(Unit) { 
+        Log.d("BottomSheetContent", "LaunchedEffect triggered")
+        friendlistviewModel.refreshFriends()
+        friendlistviewModel.refreshFriendRequests()
+    }
 
     Column(
         modifier = Modifier
@@ -68,9 +77,31 @@ fun FriendsBottomSheetContent(
             is FriendScreenState.List -> {
                 Header(onAddFriendClick = { showAddDialog = true })
 
+                // 친구 요청 목록
+                if (friendRequests.isNotEmpty()) {
+                    Text(
+                        text = "친구 요청",
+                        style = MaterialTheme.typography.h6,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    LazyColumn {
+                        items(friendRequests) { request ->
+                            FriendRequestItem(
+                                request = request,
+                                onAccept = { friendlistviewModel.replyToFriendRequest(request.requesterEmail, true) },
+                                onReject = { friendlistviewModel.replyToFriendRequest(request.requesterEmail, false) }
+                            )
+                        }
+                    }
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                }
 
-
-
+                // 친구 목록
+                Text(
+                    text = "친구 목록",
+                    style = MaterialTheme.typography.h6,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
                 LazyColumn {
                     items(friends, key = { it.id }) { user ->
                         FriendListItem(
@@ -215,7 +246,7 @@ fun MyPageBottomSheetContent() {
                     .background(Color(0xFFF2F2F7))
                     .padding(16.dp)
             ) {
-                Text("‘나의 찾기’ 알림 사용자화", color = MaterialTheme.colors.primary)
+                Text("'나의 찾기' 알림 사용자화", color = MaterialTheme.colors.primary)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("추적 알림 사용자화", color = MaterialTheme.colors.primary)
             }
@@ -346,6 +377,60 @@ private fun FriendListItem(
                 contentDescription = "삭제",
                 tint = MaterialTheme.colors.error
             )
+        }
+    }
+}
+
+@Composable
+private fun FriendRequestItem(
+    request: FriendshipRequestLookupDto,
+    onAccept: () -> Unit,
+    onReject: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 왼쪽 – 아바타(이니셜)
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colors.primary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(request.requesterName.first().uppercaseChar().toString())
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        // 가운데 – 이름
+        Text(
+            text = request.requesterName,
+            style = MaterialTheme.typography.subtitle1,
+            modifier = Modifier.weight(1f)
+        )
+
+        // 오른쪽 – 수락/거절 버튼
+        Row {
+            TextButton(
+                onClick = onAccept,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colors.primary
+                )
+            ) {
+                Text("수락")
+            }
+            TextButton(
+                onClick = onReject,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colors.error
+                )
+            ) {
+                Text("거절")
+            }
         }
     }
 }
