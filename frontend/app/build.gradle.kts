@@ -55,6 +55,9 @@ dependencies {
     // 지도 컴포즈 통합 라이브러리 (Google Maps Compose)
     implementation(libs.google.maps.compose)
 
+    // Coil - 이미지 로딩 라이브러리
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
     // Jetpack Compose용 머티리얼 디자인 컴포넌트
     implementation(libs.androidx.compose.material)
 

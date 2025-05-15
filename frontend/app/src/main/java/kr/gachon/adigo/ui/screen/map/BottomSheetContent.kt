@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 import androidx.compose.runtime.*
-import androidx.compose.foundation.lazy.items   // ← 추가
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
@@ -39,6 +39,8 @@ import androidx.compose.material.Divider
 import androidx.compose.material.ButtonDefaults
 import kr.gachon.adigo.data.model.dto.FriendshipRequestLookupDto
 import android.util.Log
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 
 // ===============================
@@ -347,27 +349,39 @@ private fun FriendListItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 왼쪽 – 아바타(이니셜)
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colors.primary.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(user.name.first().uppercaseChar().toString())
+        // 프로필 이미지
+        if (user.profileImageURL.isNotEmpty()) {
+            AsyncImage(
+                model = user.profileImageURL,
+                contentDescription = "프로필 이미지",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(20.dp)),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            // 프로필 이미지가 없는 경우 이니셜 표시
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colors.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(user.name.first().uppercaseChar().toString())
+            }
         }
 
         Spacer(Modifier.width(12.dp))
 
-        // 가운데 – 이름
+        // 이름
         Text(
             text = user.name,
             style = MaterialTheme.typography.subtitle1,
-            modifier = Modifier.weight(1f)     // 남은 공간 사용
+            modifier = Modifier.weight(1f)
         )
 
-        // 오른쪽 – 삭제 아이콘
+        // 삭제 아이콘
         IconButton(
             onClick = onDelete,
             modifier = Modifier.size(32.dp)
