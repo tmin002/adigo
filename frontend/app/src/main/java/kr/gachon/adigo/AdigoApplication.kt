@@ -66,11 +66,19 @@ class AdigoApplication : Application() {
         container.userLocationRepo = UserLocationRepository(container.realm)
         container.userDatabaseRepo = UserDatabaseRepository(container.realm)
 
-        // ─ Retrofit & Remote DS ─
+        // ─ 1. 임시 Retrofit/OkHttp로 authRemote만 먼저 초기화 ─
+        val tempOkHttp = okhttp3.OkHttpClient.Builder().build()
+        val tempRetrofit = retrofit2.Retrofit.Builder()
+            .baseUrl("https://adigo.site/api/")
+            .client(tempOkHttp)
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+            .build()
+        container.authRemote = AuthRemoteDataSource(tempRetrofit.create(AuthApi::class.java))
+
+        // ─ 2. 진짜 RetrofitProvider로 OkHttp/Retrofit 생성 ─
         val okHttp = RetrofitProvider.getOkHttpClient(container.tokenManager, container.authRemote)
         container.retrofit = RetrofitProvider.create(container.tokenManager, container.authRemote)
 
-        container.authRemote   = AuthRemoteDataSource(container.retrofit.create(AuthApi::class.java))
         container.friendRemote = FriendRemoteDataSource(container.retrofit.create(FriendApi::class.java))
         container.pushRemote   = PushRemoteDataSource(container.retrofit.create(PushApi::class.java))
 

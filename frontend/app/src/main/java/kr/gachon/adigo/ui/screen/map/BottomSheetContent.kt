@@ -323,7 +323,7 @@ private fun Header(onAddFriendClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "친구 목록", style = MaterialTheme.typography.h6)
+
 
         IconButton(onClick = onAddFriendClick) {
             Icon(
