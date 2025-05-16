@@ -2,7 +2,7 @@ package kr.gachon.adigo.data.model.global
 import java.time.LocalDateTime
 
 data class ChatBubble(
-    override val id: String,
+    override val id: Long,
     val message: String,
     val type: ChatBubbleType
 ): BasedManagedModel<ChatRoomDTO> {
@@ -19,13 +19,10 @@ enum class ChatBubbleType {
 }
 
 class ChatBubbleDTO(
-    val message_id: Long,
+    override val id: Long,
     val type: ChatBubbleType,
-    val roomId: String,
+    val roomId: Long,
     val sender: String,
     val message: String,
     val time: LocalDateTime
-
-) : BasedDataTransfterObject {
-    override val id: String get() = this.message_id.toString()
-}
+) : BasedDataTransfterObject

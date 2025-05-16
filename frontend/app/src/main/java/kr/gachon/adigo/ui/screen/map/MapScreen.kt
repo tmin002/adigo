@@ -67,6 +67,7 @@ import kr.gachon.adigo.background.UserLocationProviderService
 import java.net.URLEncoder
 import java.util.Locale
 import com.google.maps.android.compose.CameraMoveStartedReason
+import kr.adigo.adigo.database.entity.UserEntity
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -287,10 +288,10 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                     BottomSheetContentType.FRIENDS -> {
                         FriendsBottomSheetContent(
                             friendScreenState = friendScreenState,
-                            onSelectFriend = { friendId ->
-                                friendScreenState = FriendScreenState.Profile(friendId)
+                            onSelectFriend = { friend: UserEntity ->
+                                friendScreenState = FriendScreenState.Profile(friend)
                                 // Optional: Move camera to friend's location if available
-                                friends.firstOrNull { it.id == friendId }?.let { friend ->
+                                friends.firstOrNull { it.id == friend.id }?.let { friend ->
                                     scope.launch {
                                         cameraPositionState.animate(
                                             update = CameraUpdateFactory.newLatLngZoom(
@@ -390,8 +391,8 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                         friends.forEach { user ->
                             Marker(
                                 state = MarkerState(position = LatLng(user.lat, user.lng)),
-                                title = user.id,
-                                snippet = user.id,
+                                title = user.id.toString(),
+                                snippet = user.id.toString(),
                                 onClick = { marker ->
                                     Log.d("MapScreen", "Friend marker clicked: ${marker.title}")
                                     scope.launch {

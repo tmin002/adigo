@@ -11,7 +11,7 @@ import io.realm.kotlin.types.annotations.PrimaryKey
  */
 class UserEntity : RealmObject {
     @PrimaryKey
-    var id: String = ""          // 이메일 = PK
+    var id: Long = 0L // 변경: String → Long
 
     var name: String = ""
     var profileImageURL: String = ""

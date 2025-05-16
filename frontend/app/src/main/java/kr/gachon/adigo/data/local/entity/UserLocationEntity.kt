@@ -5,7 +5,7 @@ import io.realm.kotlin.types.annotations.PrimaryKey
 
 class UserLocationEntity : RealmObject {
     @PrimaryKey
-    var id: String = ""          // UUID or userId
+    var id: Long = 0L
     var lat: Double = 0.0
     var lng: Double = 0.0
 }

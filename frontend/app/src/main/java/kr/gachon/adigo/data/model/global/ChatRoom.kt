@@ -3,8 +3,8 @@ package kr.gachon.adigo.data.model.global
 import java.time.LocalDateTime
 
 data class ChatRoom(
-    override val id: String,
-    val targetUserID: String,
+    override val id: Long,
+    val targetUserID: Long,
     val createdDate: LocalDateTime
 ): BasedManagedModel<ChatRoomDTO> {
     override fun getDTO(): ChatRoomDTO {
@@ -13,10 +13,8 @@ data class ChatRoom(
 }
 
 class ChatRoomDTO(
-    val roomId: String,
+    override val id: Long,
     val roomName: String,
     val founder_id: Long,
     val created_Date: LocalDateTime
-): BasedDataTransfterObject {
-    override val id: String get() = this.roomId
-}
+): BasedDataTransfterObject

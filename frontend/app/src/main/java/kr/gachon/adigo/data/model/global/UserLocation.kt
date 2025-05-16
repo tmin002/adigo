@@ -8,7 +8,7 @@ import com.google.gson.annotations.SerializedName
  * Realm·Room 같은 DB 라이브러리에 전혀 의존하지 않습니다.
  */
 data class UserLocation(
-    override val id: String,   // UUID 또는 userId
+    override val id: Long,   // UUID 또는 userId
     val lat: Double,
     val lng: Double
 ) : BasedManagedModel<UserLocationDto> {
@@ -19,7 +19,7 @@ data class UserLocation(
 
 
 data class UserLocationDto(
-    @SerializedName("userId") override val id: String,
+    @SerializedName("userId") override val id: Long,
     @SerializedName("latitude") val lat: Double,
     @SerializedName("longitude") val lng: Double
 

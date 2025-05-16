@@ -10,6 +10,7 @@ import kr.gachon.adigo.data.local.entity.UserLocationEntity
 import kr.gachon.adigo.data.local.transformer.UserLocationTransformer
 import kr.gachon.adigo.data.model.global.UserLocation
 import kr.gachon.adigo.data.model.global.UserLocationDto
+import io.realm.kotlin.ext.query
 
 class UserLocationRepository(private val realm: Realm) {
 
@@ -25,7 +26,7 @@ class UserLocationRepository(private val realm: Realm) {
         realm.write {
             list.forEach { dto ->
                 copyToRealm(
-                    UserLocationTransformer.modelToEntity(UserLocation(dto.id,dto.lat,dto.lng)),
+                    UserLocationTransformer.modelToEntity(UserLocation(dto.id, dto.lat, dto.lng)),
                     UpdatePolicy.ALL
                 )
             }
@@ -43,4 +44,12 @@ class UserLocationRepository(private val realm: Realm) {
                 )
             }
         }.flowOn(Dispatchers.IO)
+
+    /** id로 위치 정보 삭제 */
+    suspend fun deleteById(id: Long) {
+        realm.write {
+            val entity = this.query<UserLocationEntity>("id == $0", id).first().find()
+            entity?.let { delete(it) }
+        }
+    }
 }

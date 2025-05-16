@@ -1,12 +1,12 @@
 package kr.gachon.adigo.data.model.global
 
 data class User(
+    override val id: Long,
     val email: String,
     val nickname: String,
     val profileImage: String?,  // Swift의 URL? -> String?
     val authority: Authority
 ): BasedManagedModel<UserDTO> {
-    override val id: String get() = this.email // 이메일을 PK로 사용
     //var location: UserLocation? = null
 
     override fun getDTO(): UserDTO {
@@ -19,7 +19,7 @@ data class User(
     }
 }
 class UserDTO(
-    override val id: String,
+    override val id: Long,
     val nickname: String,
     val email: String,
     val profileImage: String?,

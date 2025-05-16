@@ -20,22 +20,20 @@ object UserTransformer : BasedTransformer<User, UserEntity> {
     /** Model → Realm Entity */
     override fun modelToEntity(model: User): UserEntity =
         UserEntity().apply {
-            id = model.id                      // 이메일 = PK
+            id = model.id
             email = model.email
             name = model.nickname
             profileImageURL = model.profileImage ?: ""
             authority = model.authority.name
-
         }
 
     /** Realm Entity → Model */
     override fun entityToModel(entity: UserEntity): User =
         User(
-            email        = entity.email,
-            nickname     = entity.name,
-            profileImage = entity.profileImageURL.takeIf { it.isNotBlank() },
-            authority    = User.Authority.valueOf(entity.authority)
-
-
+            id          = entity.id,
+            email       = entity.email,
+            nickname    = entity.name,
+            profileImage= entity.profileImageURL.takeIf { it.isNotBlank() },
+            authority   = User.Authority.valueOf(entity.authority)
         )
 }

@@ -50,7 +50,7 @@ import androidx.compose.ui.layout.ContentScale
 @Composable
 fun FriendsBottomSheetContent(
     friendScreenState: FriendScreenState,
-    onSelectFriend: (String) -> Unit,
+    onSelectFriend: (UserEntity) -> Unit,
     onClickBack: () -> Unit,
     friendlistviewModel: FriendListViewModel = remember {
         FriendListViewModel(repo = AdigoApplication.AppContainer.userDatabaseRepo)
@@ -108,7 +108,7 @@ fun FriendsBottomSheetContent(
                     items(friends, key = { it.id }) { user ->
                         FriendListItem(
                             user = user,
-                            onClick = { onSelectFriend(user.email) },
+                            onClick = { onSelectFriend(user) },
                             onDelete = { friendlistviewModel.deleteFriend(user) }
                         )
                     }
@@ -120,7 +120,7 @@ fun FriendsBottomSheetContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "친구 프로필: ${friendScreenState.friendId}",
+                        text = "친구 프로필: ${friendScreenState.friend.email}",
                         style = MaterialTheme.typography.h6
                     )
                     Text(
@@ -323,7 +323,7 @@ private fun Header(onAddFriendClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-
+        Text(text = "친구 추가", style = MaterialTheme.typography.h6)
 
         IconButton(onClick = onAddFriendClick) {
             Icon(
