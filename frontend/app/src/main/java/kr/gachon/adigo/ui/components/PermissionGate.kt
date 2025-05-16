@@ -28,18 +28,41 @@ fun PermissionGate(
 ) {
     val ctx = LocalContext.current
     var granted by remember { mutableStateOf(false) }
+    var hasBasicLocationPermission by remember { mutableStateOf(false) }
 
-    /* ── 런처 ── */
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { grants ->
-        if (grants.values.all { it }) {
-            // 배터리 최적화 예외까지 신청한 뒤 granted = true
+    /* ── 백그라운드 위치 권한 런처 ── */
+    val backgroundLocationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
             requestIgnoreBatteryOptim(ctx) { granted = true }
         } else {
             Toast.makeText(
                 ctx,
-                "권한 거부 시 위치 공유 기능이 제한됩니다.",
+                "백그라운드 위치 권한이 거부되어 앱이 종료된 상태에서는 위치가 전송되지 않습니다.",
+                Toast.LENGTH_LONG
+            ).show()
+            // 기본 위치 권한만으로도 계속 진행
+            requestIgnoreBatteryOptim(ctx) { granted = true }
+        }
+    }
+
+    /* ── 기본 위치 권한 런처 ── */
+    val basicLocationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        if (grants.values.all { it }) {
+            hasBasicLocationPermission = true
+            // 기본 위치 권한이 승인되면 백그라운드 위치 권한 요청
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            } else {
+                requestIgnoreBatteryOptim(ctx) { granted = true }
+            }
+        } else {
+            Toast.makeText(
+                ctx,
+                "위치 권한이 거부되어 앱 기능이 제한됩니다.",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -56,7 +79,7 @@ fun PermissionGate(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                 add(Manifest.permission.POST_NOTIFICATIONS)
         }
-        launcher.launch(perms.toTypedArray())
+        basicLocationLauncher.launch(perms.toTypedArray())
     }
 
     /* ── 권한 승인되면 실제 UI 그리기 ── */

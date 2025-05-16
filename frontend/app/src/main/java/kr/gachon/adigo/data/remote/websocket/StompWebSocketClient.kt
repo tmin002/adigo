@@ -291,7 +291,7 @@ class StompWebSocketClient(
             append(body)
             append("\u0000") // Null terminator
         }
-        Log.i("WEBSOCKET TEST", sendFrame)
+        Log.i("WEBSOCKET", sendFrame)
         webSocket?.send(sendFrame) ?: Log.w(TAG, "WebSocket is null, cannot send message to $destination")
         Log.d(TAG, "Sent STOMP SEND frame to $destination with body: $body")
     }

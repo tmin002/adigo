@@ -30,6 +30,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.MapUiSettings
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
 import android.content.Context
@@ -64,6 +66,7 @@ import android.util.Log
 import kr.gachon.adigo.background.UserLocationProviderService
 import java.net.URLEncoder
 import java.util.Locale
+import com.google.maps.android.compose.CameraMoveStartedReason
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -169,15 +172,9 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
 
     // 지도가 움직이면 내 위치 추적 해제
     LaunchedEffect(cameraPositionState.position) {
-        // Check if the change was initiated by user gesture (more complex) or programmatically
-        // A simple approach is to just turn off tracking if the camera position changes *while* tracking was on.
-        // A more robust approach involves checking GestureSource or using a custom event handler.
-        // For simplicity now, we'll turn it off if it was tracking.
-        // A better approach is to set isTracking = false on manual map interaction (map drag, zoom gestures).
         if (isTracking) {
-            // Adding a slight delay can help distinguish between programmatic moves and user gestures
-            // However, manual gestures might not update `isTracking` state immediately.
-            // The onMapClick listener below is a better place to set isTracking = false
+            isTracking = false
+            Log.d("MapScreen", "Camera moved after user interaction. Tracking disabled.")
         }
     }
 
@@ -359,13 +356,14 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                         modifier = Modifier.fillMaxSize(),
                         cameraPositionState = cameraPositionState,
                         properties = MapProperties(
-                            isMyLocationEnabled = hasLocationPermission
+                            isMyLocationEnabled = hasLocationPermission,
+                            mapType = MapType.NORMAL
                         ),
-                        onMapClick = {
-                            isTracking = false
-                            Log.d("MapScreen", "Map clicked. Tracking turned off.")
-                        },
-                        onMapLongClick = {},
+                        uiSettings = MapUiSettings(
+                            zoomControlsEnabled = false,
+                            myLocationButtonEnabled = true,
+                            mapToolbarEnabled = false
+                        ),
                         onMyLocationButtonClick = {
                             if (hasLocationPermission && currentLocation != null) {
                                 isTracking = true
@@ -379,6 +377,14 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                             } else {
                                 false
                             }
+                        },
+                        onMapClick = {
+                            isTracking = false
+                            Log.d("MapScreen", "Map clicked. Tracking disabled.")
+                        },
+                        onMapLongClick = {
+                            isTracking = false
+                            Log.d("MapScreen", "Map long clicked. Tracking disabled.")
                         }
                     ) {
                         friends.forEach { user ->
