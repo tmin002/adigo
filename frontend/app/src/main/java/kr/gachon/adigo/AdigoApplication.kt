@@ -67,8 +67,8 @@ class AdigoApplication : Application() {
         container.userDatabaseRepo = UserDatabaseRepository(container.realm)
 
         // ─ Retrofit & Remote DS ─
-        val okHttp = RetrofitProvider.getOkHttpClient(container.tokenManager)
-        container.retrofit = RetrofitProvider.create(container.tokenManager)
+        val okHttp = RetrofitProvider.getOkHttpClient(container.tokenManager, container.authRemote)
+        container.retrofit = RetrofitProvider.create(container.tokenManager, container.authRemote)
 
         container.authRemote   = AuthRemoteDataSource(container.retrofit.create(AuthApi::class.java))
         container.friendRemote = FriendRemoteDataSource(container.retrofit.create(FriendApi::class.java))
