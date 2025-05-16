@@ -1,6 +1,19 @@
 package kr.gachon.adigo.ui.screen.map
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
+import android.net.Uri
+import android.os.Build
+import android.os.Looper
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -13,61 +26,35 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.launch
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapType
-import com.google.maps.android.compose.MapUiSettings
-import kr.gachon.adigo.ui.viewmodel.AuthViewModel
-import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
-import android.content.Context
-import android.content.Intent
-import android.location.Geocoder
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.bumptech.glide.request.RequestOptions
+import com.google.android.gms.location.*
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kr.gachon.adigo.data.model.global.UserLocation
-import androidx.compose.runtime.mutableStateOf
-import com.google.android.gms.maps.CameraUpdateFactory
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
-import kotlin.coroutines.coroutineContext
-import com.google.android.gms.location.LocationServices
-import android.location.Location
-import android.net.Uri
-import android.os.Build
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationResult
-import android.os.Looper
-import androidx.compose.foundation.gestures.awaitFirstDown
-import com.google.android.gms.location.Priority
-import kotlinx.coroutines.delay
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
+import kotlinx.coroutines.*
+import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.AdigoApplication
-import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
-import android.util.Log
 import kr.gachon.adigo.background.UserLocationProviderService
+import kr.gachon.adigo.ui.viewmodel.AuthViewModel
+import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
 import java.net.URLEncoder
 import java.util.Locale
-import com.google.maps.android.compose.CameraMoveStartedReason
-import kr.adigo.adigo.database.entity.UserEntity
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -274,6 +261,9 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     // Let's add a button for "My Location" that sets isTracking=true and moves the camera.
     // The onMapClick listener will set isTracking=false.
 
+    // 프로필 이미지 캐시를 위한 상태 맵
+    val profileImageCache = remember { mutableStateMapOf<Long, BitmapDescriptor>() }
+
     Box(modifier = Modifier
         .fillMaxSize()
         .navigationBarsPadding() // Handle system bars
@@ -388,11 +378,32 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                             Log.d("MapScreen", "Map long clicked. Tracking disabled.")
                         }
                     ) {
-                        friends.forEach { user ->
+                        friends.forEach { userLocation ->
+                            // 1. id로 UserEntity 조회
+                            val userEntity = AdigoApplication.AppContainer.userDatabaseRepo.getUserById(userLocation.id)
+                            val profileUrl = userEntity?.profileImageURL
+
+                            // 2. 프로필 이미지를 비트맵으로 변환 (캐시 사용)
+                            val context = LocalContext.current
+                            val markerIcon by remember(userLocation.id, profileUrl) {
+                                derivedStateOf {
+                                    if (profileUrl != null) {
+                                        profileImageCache.getOrPut(userLocation.id) {
+                                            // 캐시에 없으면 로드
+                                            val bitmap = runBlocking { loadProfileBitmap(context, profileUrl) }
+                                            bitmap?.let { BitmapDescriptorFactory.fromBitmap(it) }
+                                                ?: BitmapDescriptorFactory.defaultMarker()
+                                        }
+                                    } else {
+                                        BitmapDescriptorFactory.defaultMarker()
+                                    }
+                                }
+                            }
+
                             Marker(
-                                state = MarkerState(position = LatLng(user.lat, user.lng)),
-                                title = user.id.toString(),
-                                snippet = user.id.toString(),
+                                state = MarkerState(position = LatLng(userLocation.lat, userLocation.lng)),
+                                title = userEntity?.name ?: userLocation.id.toString(),
+                                icon = markerIcon,
                                 onClick = { marker ->
                                     Log.d("MapScreen", "Friend marker clicked: ${marker.title}")
                                     scope.launch {
@@ -505,5 +516,23 @@ private fun encodeAddress(address: String): String {
         URLEncoder.encode(address, "UTF-8")
     } catch (e: Exception) {
         ""
+    }
+}
+
+// 프로필 이미지를 비트맵으로 변환하는 함수
+private suspend fun loadProfileBitmap(context: Context, url: String): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
+    try {
+        Glide.with(context)
+            .asBitmap()
+            .load(url)
+            .apply(RequestOptions()
+                .transform(CircleCrop())
+                .override(100, 100)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .skipMemoryCache(false))
+            .submit()
+            .get()
+    } catch (e: Exception) {
+        null
     }
 }

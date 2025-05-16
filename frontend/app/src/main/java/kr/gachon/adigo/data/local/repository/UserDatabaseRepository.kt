@@ -40,4 +40,9 @@ class UserDatabaseRepository(private val realm: Realm) {
                 ?.let { delete(it) }
         }
     }
+
+    /** Get user by ID */
+    fun getUserById(id: Long): UserEntity? {
+        return realm.query<UserEntity>("id == $0", id).first().find()
+    }
 }
