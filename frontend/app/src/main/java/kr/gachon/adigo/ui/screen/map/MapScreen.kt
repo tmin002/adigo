@@ -292,6 +292,19 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                                     }
                                 }
                             },
+                            onNavigateToFriend = { friend: UserEntity ->
+                                // 친구의 현재 위치 조회
+                                val friendLocation = friends.firstOrNull { it.id == friend.id }
+                                if (friendLocation != null && currentLocation != null) {
+                                    searchLoadToNaverMap(
+                                        context = context,
+                                        slat = currentLocation!!.latitude,
+                                        slng = currentLocation!!.longitude,
+                                        dlat = friendLocation.lat,
+                                        dlng = friendLocation.lng
+                                    )
+                                }
+                            },
                             onClickBack = {
                                 friendScreenState = FriendScreenState.List
                             }
@@ -413,19 +426,7 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                                                 18f
                                             )
                                         )
-                                        
-                                        // 현재 위치와 마커 위치로 네이버 지도 길 찾기 실행
-                                        if (currentLocation != null) {
-                                            searchLoadToNaverMap(
-                                                context = context,
-                                                slat = currentLocation!!.latitude,
-                                                slng = currentLocation!!.longitude,
-                                                dlat = marker.position.latitude,
-                                                dlng = marker.position.longitude
-                                            )
-                                        }
                                     }
-                                    isTracking = false
                                     true
                                 }
                             )

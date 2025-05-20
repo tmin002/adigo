@@ -21,18 +21,13 @@ import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 import androidx.compose.runtime.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.AlertDialog
-import androidx.compose.material.DismissDirection
-import androidx.compose.material.DismissValue
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.TextButton
 import androidx.compose.material.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.rememberDismissState
 import kr.adigo.adigo.database.entity.UserEntity
 import androidx.compose.material.Switch
 import androidx.compose.material.Divider
@@ -41,6 +36,7 @@ import kr.gachon.adigo.data.model.dto.FriendshipRequestLookupDto
 import android.util.Log
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.Button
 
 
 // ===============================
@@ -51,6 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 fun FriendsBottomSheetContent(
     friendScreenState: FriendScreenState,
     onSelectFriend: (UserEntity) -> Unit,
+    onNavigateToFriend: (UserEntity) -> Unit,
     onClickBack: () -> Unit,
     friendlistviewModel: FriendListViewModel = remember {
         FriendListViewModel(repo = AdigoApplication.AppContainer.userDatabaseRepo)
@@ -59,6 +56,7 @@ fun FriendsBottomSheetContent(
     val friends by friendlistviewModel.friends.collectAsState(emptyList())
     val friendRequests by friendlistviewModel.friendRequests.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    val friendLocations by AdigoApplication.AppContainer.userLocationRepo.friends.collectAsState(emptyList())
 
     LaunchedEffect(Unit) { 
         Log.d("BottomSheetContent", "LaunchedEffect triggered")
@@ -115,21 +113,99 @@ fun FriendsBottomSheetContent(
                 }
             }
             is FriendScreenState.Profile -> {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
-                    Text(
-                        text = "친구 프로필: ${friendScreenState.friend.email}",
-                        style = MaterialTheme.typography.h6
-                    )
-                    Text(
-                        text = "뒤로",
-                        modifier = Modifier.clickable { onClickBack() }
-                    )
+                    // 헤더
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "친구 프로필",
+                            style = MaterialTheme.typography.h6
+                        )
+                        Text(
+                            text = "뒤로",
+                            modifier = Modifier.clickable { onClickBack() }
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // 프로필 정보
+                    val friend = friendScreenState.friend
+                    val friendLocation = friendLocations.firstOrNull { it.id == friend.id }
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // 프로필 이미지
+                        if (friend.profileImageURL.isNotEmpty()) {
+                            AsyncImage(
+                                model = friend.profileImageURL,
+                                contentDescription = "프로필 이미지",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(RoundedCornerShape(50.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .background(MaterialTheme.colors.primary.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = friend.name.first().uppercaseChar().toString(),
+                                    style = MaterialTheme.typography.h4
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // 이름
+                        Text(
+                            text = friend.name,
+                            style = MaterialTheme.typography.h5
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // 이메일
+                        Text(
+                            text = friend.email,
+                            style = MaterialTheme.typography.body1,
+                            color = Color.Gray
+                        )
+
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        // 길 찾기 버튼
+                        Button(
+                            onClick = { onNavigateToFriend(friend) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = MaterialTheme.colors.primary
+                            )
+                        ) {
+                            Text(
+                                text = "길 찾기",
+                                style = MaterialTheme.typography.button,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "이곳에 친구 프로필 상세 정보를 표시합니다.")
             }
         }
     }
