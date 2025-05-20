@@ -55,6 +55,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import java.io.IOException
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -296,13 +297,15 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 // 친구의 현재 위치 조회
                                 val friendLocation = friends.firstOrNull { it.id == friend.id }
                                 if (friendLocation != null && currentLocation != null) {
-                                    searchLoadToNaverMap(
-                                        context = context,
-                                        slat = currentLocation!!.latitude,
-                                        slng = currentLocation!!.longitude,
-                                        dlat = friendLocation.lat,
-                                        dlng = friendLocation.lng
-                                    )
+                                    scope.launch {
+                                        searchLoadToNaverMap(
+                                            context = context,
+                                            slat = currentLocation!!.latitude,
+                                            slng = currentLocation!!.longitude,
+                                            dlat = friendLocation.lat,
+                                            dlng = friendLocation.lng
+                                        )
+                                    }
                                 }
                             },
                             onClickBack = {
@@ -479,33 +482,49 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     }
 }
 
-private fun searchLoadToNaverMap(context: Context, slat: Double, slng: Double, dlat: Double, dlng: Double) {
-    // 위도, 경도를 주소로 변환
+suspend fun searchLoadToNaverMap(context: Context, slat: Double, slng: Double, dlat: Double, dlng: Double) {
     val geocoder = Geocoder(context, Locale.KOREAN)
-    val startLocationAddress = geocoder.getFromLocation(slat, slng, 1)
-    val endLocationAddress = geocoder.getFromLocation(dlat, dlng, 1)
-    val encodedStartAddress = encodeAddress(startLocationAddress?.get(0)?.getAddressLine(0).toString().replace("대한민국 ",""))
-    val encodedEndAddress = encodeAddress(endLocationAddress?.get(0)?.getAddressLine(0).toString().replace("대한민국 ",""))
 
-    val url = "nmap://route/car?slat=${slat}&slng=${slng}&sname=${encodedStartAddress}&dlat=${dlat}&dlng=${dlng}&dname=${encodedEndAddress}"
+    val startLocationAddress = withContext(Dispatchers.IO) {
+        try {
+            geocoder.getFromLocation(slat, slng, 1)
+        } catch (e: IOException) {
+            Log.e("Geocoder", "getFromLocation (start) failed: ${e.message}")
+            null
+        }
+    }
 
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-    intent.addCategory(Intent.CATEGORY_BROWSABLE)
+    val endLocationAddress = withContext(Dispatchers.IO) {
+        try {
+            geocoder.getFromLocation(dlat, dlng, 1)
+        } catch (e: IOException) {
+            Log.e("Geocoder", "getFromLocation (end) failed: ${e.message}")
+            null
+        }
+    }
 
-    val installCheck = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    val encodedStartAddress = encodeAddress(startLocationAddress?.getOrNull(0)?.getAddressLine(0)?.replace("대한민국 ", "") ?: "출발지")
+    val encodedEndAddress = encodeAddress(endLocationAddress?.getOrNull(0)?.getAddressLine(0)?.replace("대한민국 ", "") ?: "도착지")
+
+    val url = "nmap://route/car?slat=$slat&slng=$slng&sname=$encodedStartAddress&dlat=$dlat&dlng=$dlng&dname=$encodedEndAddress"
+
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+        addCategory(Intent.CATEGORY_BROWSABLE)
+    }
+
+    val installed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         context.packageManager.queryIntentActivities(
-            Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
             PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
         )
     } else {
         context.packageManager.queryIntentActivities(
-            Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
             PackageManager.GET_META_DATA
         )
     }
 
-    // 네이버맵이 설치되어 있다면 앱으로 연결, 설치되어 있지 않다면 스토어로 이동
-    if (installCheck.isEmpty()) {
+    if (installed.isEmpty()) {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.nhn.android.nmap")))
     } else {
         context.startActivity(intent)
