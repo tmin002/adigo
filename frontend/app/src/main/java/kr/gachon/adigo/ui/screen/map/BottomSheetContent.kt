@@ -34,9 +34,13 @@ import androidx.compose.material.Divider
 import androidx.compose.material.ButtonDefaults
 import kr.gachon.adigo.data.model.dto.FriendshipRequestLookupDto
 import android.util.Log
+import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.Button
+import kr.gachon.adigo.data.remote.websocket.StompWebSocketClient
+import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketReceiver
+import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketSender
 
 
 // ===============================
@@ -259,6 +263,25 @@ private fun AddFriendDialog(
 
 @Composable
 fun MyPageBottomSheetContent() {
+    // Get WebSocket components from Application
+    val stompClient = remember { AdigoApplication.AppContainer.stompClient }
+    val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
+    val locationSender = remember { AdigoApplication.AppContainer.wsSender }
+
+    // State for location sharing
+    var isLocationSharingEnabled by remember { mutableStateOf(true) }
+    
+    // Effect to handle location sharing toggle
+    LaunchedEffect(isLocationSharingEnabled) {
+        if (isLocationSharingEnabled) {
+            // Start sending location updates
+            locationSender.sendMyLocation(0.0, 0.0) // Initial location will be updated by the service
+        } else {
+            // Stop sending location updates
+            // The service will handle this based on the state
+        }
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -268,6 +291,56 @@ fun MyPageBottomSheetContent() {
         item {
             DragHandle()
             Spacer(modifier = Modifier.height(8.dp))
+
+            // WebSocket Status Group
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF2F2F7))
+                    .padding(16.dp)
+            ) {
+                Text("연결 상태", style = MaterialTheme.typography.subtitle1)
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // WebSocket Connection Status
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("서버 연결", style = MaterialTheme.typography.body1)
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(
+                                color = if (stompClient.stompConnected) Color.Green else Color.Red,
+                                shape = CircleShape
+                            )
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Friend Location Subscription Status
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("친구 위치 구독", style = MaterialTheme.typography.body1)
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(
+                                color = if (stompClient.stompConnected && locationReceiver.receiverJob?.isActive == true) Color.Green else Color.Red,
+                                shape = CircleShape
+                            )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 위치 정보 그룹
             Column(
@@ -288,7 +361,10 @@ fun MyPageBottomSheetContent() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("나의 위치 공유", style = MaterialTheme.typography.body1)
-                    Switch(checked = true, onCheckedChange = {})
+                    Switch(
+                        checked = isLocationSharingEnabled,
+                        onCheckedChange = { isLocationSharingEnabled = it }
+                    )
                 }
             }
 
@@ -335,7 +411,6 @@ fun MyPageBottomSheetContent() {
             Text(
                 "친구 돕기",
                 color = MaterialTheme.colors.primary,
-//                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
     }

@@ -25,7 +25,7 @@ class UserLocationWebSocketReceiver(
 ) {
 
     private val TAG = "UserLocationReceiver"
-    private var receiverJob: Job? = null
+    internal var receiverJob: Job? = null
 
     // Destination for receiving friend locations as per spec
     private val FRIENDS_LOCATION_RESPONSE_DESTINATION = "/user/queue/friendsLocationResponse"

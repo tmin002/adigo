@@ -85,8 +85,13 @@ class StompWebSocketClient(
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             Log.e(TAG, "WebSocket failure: ${response?.code} / ${response?.message}", t)
+
+            if (t is java.net.SocketException) {
+                Log.e(TAG, "Detected SocketException. Resetting WebSocket object.")
+            }
+
             stompConnected = false
-            // Attempt to reconnect after a delay
+            this@StompWebSocketClient.webSocket = null // <- 여기가 핵심
             startReconnecting()
         }
     }
