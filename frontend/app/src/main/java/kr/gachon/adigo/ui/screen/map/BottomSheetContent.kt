@@ -39,8 +39,6 @@ import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.Button
 import kr.gachon.adigo.data.remote.websocket.StompWebSocketClient
-import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketReceiver
-import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketSender
 
 
 // ===============================
@@ -268,19 +266,9 @@ fun MyPageBottomSheetContent() {
     val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
     val locationSender = remember { AdigoApplication.AppContainer.wsSender }
 
-    // State for location sharing
-    var isLocationSharingEnabled by remember { mutableStateOf(true) }
+
     
-    // Effect to handle location sharing toggle
-    LaunchedEffect(isLocationSharingEnabled) {
-        if (isLocationSharingEnabled) {
-            // Start sending location updates
-            locationSender.sendMyLocation(0.0, 0.0) // Initial location will be updated by the service
-        } else {
-            // Stop sending location updates
-            // The service will handle this based on the state
-        }
-    }
+
 
     LazyColumn(
         modifier = Modifier
@@ -355,63 +343,13 @@ fun MyPageBottomSheetContent() {
                 Text("위치: 대한민국, 경기도", style = MaterialTheme.typography.body1)
                 Text("기기: 이 Android", style = MaterialTheme.typography.body1)
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("나의 위치 공유", style = MaterialTheme.typography.body1)
-                    Switch(
-                        checked = isLocationSharingEnabled,
-                        onCheckedChange = { isLocationSharingEnabled = it }
-                    )
-                }
+
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 알림 그룹
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF2F2F7))
-                    .padding(16.dp)
-            ) {
-                Text("알림", style = MaterialTheme.typography.subtitle1)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("친구 요청 허용", style = MaterialTheme.typography.body1)
-                    Switch(checked = true, onCheckedChange = {})
-                }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // 링크 그룹
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF2F2F7))
-                    .padding(16.dp)
-            ) {
-                Text("'나의 찾기' 알림 사용자화", color = MaterialTheme.colors.primary)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("추적 알림 사용자화", color = MaterialTheme.colors.primary)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 하단 텍스트
-            Text(
-                "친구 돕기",
-                color = MaterialTheme.colors.primary,
-            )
         }
     }
 }
