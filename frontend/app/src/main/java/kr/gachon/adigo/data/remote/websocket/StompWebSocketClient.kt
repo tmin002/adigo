@@ -15,6 +15,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.data.local.TokenManager
+import kr.gachon.adigo.data.model.dto.RefreshTokenRequest
+import kr.gachon.adigo.data.remote.auth.AuthRemoteDataSource
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -27,7 +29,7 @@ import kotlin.coroutines.CoroutineContext
 class StompWebSocketClient(
     private val websocketUrl: String, // e.g., "ws://adigo.site/ws-stomp" (SockJS endpoint)
     private val tokenManager: TokenManager,
-    private val okHttpClient: OkHttpClient, // Use the same client as Retrofit
+    private val authRemote: AuthRemoteDataSource,
     private val applicationScope: CoroutineScope // Scope for client's operations
 ) {
 
@@ -74,6 +76,7 @@ class StompWebSocketClient(
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             Log.d(TAG, "WebSocket closing: $code / $reason")
             stompConnected = false
+            this@StompWebSocketClient.webSocket = null
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
@@ -149,10 +152,22 @@ class StompWebSocketClient(
                 }
             }
             "ERROR" -> {
-                val message = headers["message"] ?: "Unknown error"
-                Log.e(TAG, "STOMP ERROR: $message\nBody:\n$bodyPart")
-                // Depending on the error, might need to reconnect
-                // e.g., if it's an auth error, might need to refresh token and reconnect
+                val msg = headers["message"] ?: ""
+                Log.e(TAG, "STOMP ERROR: $msg\nBody:\n$bodyPart")
+
+                // 🔑 토큰 만료로 추정되는 키워드(예: 'Expired', 'Invalid')가 오면 갱신 시도
+                if (msg.contains("expired", true) || msg.contains("Invalid", true)) {
+                    applicationScope.launch {
+                        if (refreshToken()) {          // refresh 성공하면
+                            reconnectWithNewToken()    // 웹소켓 재연결
+                        } else {
+                            // refresh 실패 → 로그인 만료 처리 등을 UI 쪽에 통보
+                        }
+                    }
+                } else {
+                    // 기타 오류는 기존 로직(재연결 or 종료)으로 진행
+                    startReconnecting()
+                }
             }
             "RECEIPT" -> {
                 val receiptId = headers["receipt-id"]
@@ -211,7 +226,7 @@ class StompWebSocketClient(
             webSocket = wsOkHttpClient.newWebSocket(request, webSocketListener)
             Log.d(TAG, "WebSocket connection attempt started.")
             Log.d(TAG, AdigoApplication.AppContainer.tokenManager.getJwtToken()!!)
-            val a = 3
+
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create WebSocket", e)
             startReconnecting()
@@ -226,13 +241,10 @@ class StompWebSocketClient(
         val disconnectFrame = "DISCONNECT\n\n\u0000"
         webSocket?.send(disconnectFrame) // Send STOMP DISCONNECT frame
 
-        // Close the underlying WebSocket after a short delay to allow DISCONNECT to send
-        applicationScope.launch {
-            delay(100) // Small delay
-            webSocket?.close(1000, "Client disconnecting")
-            webSocket = null // Clear reference
-            Log.i(TAG, "WebSocket client disconnected.")
-        }
+        // Close the underlying WebSocket immediately
+        webSocket?.close(1000, "Client disconnecting")
+        webSocket = null // Clear reference
+        Log.i(TAG, "WebSocket client disconnected.")
     }
 
     fun subscribe(destination: String): String {
@@ -300,6 +312,38 @@ class StompWebSocketClient(
         webSocket?.send(sendFrame) ?: Log.w(TAG, "WebSocket is null, cannot send message to $destination")
         Log.d(TAG, "Sent STOMP SEND frame to $destination with body: $body")
     }
+
+    // ──────────────────────────────────────────────
+    // ▶ refreshToken(): suspend fun
+    //    refreshToken 호출 성공 시 true, 실패 시 false
+    // ──────────────────────────────────────────────
+    private suspend fun refreshToken(): Boolean {
+        val refresh = tokenManager.getRefreshToken() ?: return false
+        return runCatching {
+            authRemote.refresh(
+                RefreshTokenRequest(
+                    accessToken  = tokenManager.getJwtToken() ?: "",
+                    refreshToken = refresh
+                )
+            ).getOrNull()?.data
+        }.getOrNull()?.let {
+            tokenManager.saveTokens(it)
+            Log.i(TAG, "🎫 AccessToken refreshed!")
+            true
+        } ?: false
+    }
+
+    // ──────────────────────────────────────────────
+    // ▶ 재연결 : 기존 웹소켓을 닫고 새로 connect()
+    // ──────────────────────────────────────────────
+    private fun reconnectWithNewToken() {
+        stompConnected = false
+        webSocket?.close(1000, "refresh token done")
+        webSocket = null
+        connect()          // → 내부에서 sendConnectFrame()을 호출하며
+        //    새 accessToken이 자동으로 실림
+    }
+
 
     // Lifecycle method to clean up coroutine scope
     fun shutdown() {

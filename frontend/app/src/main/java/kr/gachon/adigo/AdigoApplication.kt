@@ -87,7 +87,7 @@ class AdigoApplication : Application() {
         container.stompClient = StompWebSocketClient(
             websocketUrl   = "wss://adigo.site/api/ws/chat/websocket",
             tokenManager   = container.tokenManager,
-            okHttpClient   = okHttp,
+            authRemote =  container.authRemote,
             applicationScope = appScope
         )
         container.wsReceiver = UserLocationWebSocketReceiver(
@@ -107,7 +107,7 @@ class AdigoApplication : Application() {
 
     override fun onTerminate() {
         super.onTerminate()
-//        AppContainer.realm.close()
-//        AppContainer.stompClient.shutdown()
+        AppContainer.realm.close()
+        AppContainer.stompClient.shutdown()
     }
 }
