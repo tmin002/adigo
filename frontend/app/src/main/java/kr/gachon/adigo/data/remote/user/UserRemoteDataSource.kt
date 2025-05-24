@@ -7,6 +7,8 @@ import retrofit2.Response
 class UserRemoteDataSource(
     private val api: UserApi
 ) {
+    suspend fun getCurrentUser(): Response<ProfileResponse> = api.getCurrentUser()
+    
     suspend fun uploadProfileImage(file: MultipartBody.Part): Response<ProfileResponse> =
         api.uploadProfileImage(file)
 } 

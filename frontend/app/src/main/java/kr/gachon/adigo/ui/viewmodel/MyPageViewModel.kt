@@ -40,11 +40,32 @@ class MyPageViewModel(
 
     private fun loadCurrentUser() {
         viewModelScope.launch {
-            val userId = AdigoApplication.AppContainer.tokenManager.getCurrentUserId()
-            if (userId != null) {
-                _currentUser.value = repo.getUserById(userId)
-            } else {
-                _error.value = "로그인이 필요합니다."
+            try {
+                _isLoading.value = true
+                _error.value = null
+
+                // 서버에서 현재 사용자 정보 가져오기
+                val response = AdigoApplication.AppContainer.userRemote.getCurrentUser()
+                if (response.isSuccessful) {
+                    response.body()?.let { userResponse ->
+                        // 서버 응답을 UserEntity로 변환하여 저장
+                        val userEntity = UserEntity().apply {
+                            id = userResponse.data.id
+                            email = userResponse.data.email
+                            name = userResponse.data.nickname
+                            profileImageURL = userResponse.data.profileImage ?: ""
+                            authority = userResponse.data.authority.name  // enum을 문자열로 변환
+                        }
+                        repo.upsert(userEntity)
+                        _currentUser.value = userEntity
+                    }
+                } else {
+                    _error.value = "사용자 정보를 가져오는데 실패했습니다: ${response.message()}"
+                }
+            } catch (e: Exception) {
+                _error.value = "사용자 정보를 가져오는데 실패했습니다: ${e.message}\n${e.stackTraceToString()}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -84,7 +105,7 @@ class MyPageViewModel(
                     _error.value = "프로필 이미지 업로드 실패: ${response.message()}"
                 }
             } catch (e: Exception) {
-                _error.value = "프로필 이미지 업로드 실패: ${e.message}"
+                _error.value = "프로필 이미지 업로드 실패: ${e.message}\n${e.stackTraceToString()}"
             } finally {
                 _isLoading.value = false
             }
