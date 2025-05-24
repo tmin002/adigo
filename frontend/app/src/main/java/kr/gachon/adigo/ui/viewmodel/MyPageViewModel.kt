@@ -40,9 +40,12 @@ class MyPageViewModel(
 
     private fun loadCurrentUser() {
         viewModelScope.launch {
-            // TODO: 현재 로그인한 사용자의 ID를 가져오는 로직 필요
-            val userId = 1L // 임시로 1L 사용
-            _currentUser.value = repo.getUserById(userId)
+            val userId = AdigoApplication.AppContainer.tokenManager.getCurrentUserId()
+            if (userId != null) {
+                _currentUser.value = repo.getUserById(userId)
+            } else {
+                _error.value = "로그인이 필요합니다."
+            }
         }
     }
 

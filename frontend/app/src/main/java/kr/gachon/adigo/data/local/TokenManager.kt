@@ -88,4 +88,16 @@ class TokenManager(context: Context) {
     fun clearTokens() {
         securePrefs.edit().clear().apply()
     }
+
+    /* ───────── 현재 로그인한 사용자의 ID 조회 ───────── */
+    fun getCurrentUserId(): Long? {
+        val token = getJwtToken() ?: return null
+        return try {
+            val jwt = JWT.decode(token)
+            jwt.getClaim("id").asLong()
+        } catch (e: JWTDecodeException) {
+            Log.e("TokenManager", "Failed to decode JWT token", e)
+            null
+        }
+    }
 }
