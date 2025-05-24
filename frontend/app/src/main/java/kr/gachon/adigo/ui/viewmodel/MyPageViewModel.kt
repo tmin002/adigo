@@ -67,7 +67,7 @@ class MyPageViewModel(
                 val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
                 // API 호출
-                val response = AdigoApplication.AppContainer.userApi.uploadProfileImage(body)
+                val response = AdigoApplication.AppContainer.userRemote.uploadProfileImage(body)
                 
                 if (response.isSuccessful) {
                     response.body()?.let { profileResponse ->
