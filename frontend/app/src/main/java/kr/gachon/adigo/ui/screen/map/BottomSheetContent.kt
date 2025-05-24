@@ -39,6 +39,14 @@ import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.Button
 import kr.gachon.adigo.data.remote.websocket.StompWebSocketClient
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextDecoration.Companion.None
+import kr.gachon.adigo.ui.viewmodel.MyPageViewModel
+import androidx.compose.material.CircularProgressIndicator
 
 
 // ===============================
@@ -265,10 +273,33 @@ fun MyPageBottomSheetContent() {
     val stompClient = remember { AdigoApplication.AppContainer.stompClient }
     val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
     val locationSender = remember { AdigoApplication.AppContainer.wsSender }
-
-
     
+    val viewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
+    val currentUser by viewModel.currentUser.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val context = LocalContext.current
 
+    // 이미지 선택 결과 처리
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.updateProfileImage(it, context) }
+    }
+
+    // 에러 다이얼로그
+    error?.let { errorMessage ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("오류") },
+            text = { Text(errorMessage) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) {
+                    Text("확인")
+                }
+            }
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -279,6 +310,57 @@ fun MyPageBottomSheetContent() {
         item {
             DragHandle()
             Spacer(modifier = Modifier.height(8.dp))
+
+            // 프로필 섹션
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF2F2F7))
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 프로필 이미지
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(RoundedCornerShape(60.dp))
+                        .background(MaterialTheme.colors.primary.copy(alpha = 0.15f))
+                        .clickable(enabled = !isLoading) { launcher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color = MaterialTheme.colors.primary
+                        )
+                    } else if (currentUser?.profileImageURL?.isNotEmpty() == true) {
+                        AsyncImage(
+                            model = currentUser?.profileImageURL,
+                            contentDescription = "프로필 이미지",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = currentUser?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                            style = MaterialTheme.typography.h4
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // 프로필 이미지 변경 버튼
+                Text(
+                    text = "프로필 이미지 변경",
+                    style = MaterialTheme.typography.body2,
+                    color = if (isLoading) Color.Gray else MaterialTheme.colors.primary,
+                    modifier = Modifier.clickable(enabled = !isLoading) { launcher.launch("image/*") }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // WebSocket Status Group
             Column(
@@ -343,13 +425,7 @@ fun MyPageBottomSheetContent() {
                 Text("위치: 대한민국, 경기도", style = MaterialTheme.typography.body1)
                 Text("기기: 이 Android", style = MaterialTheme.typography.body1)
                 Spacer(modifier = Modifier.height(8.dp))
-
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-
-
         }
     }
 }

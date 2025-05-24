@@ -18,6 +18,7 @@ import kr.gachon.adigo.data.remote.friend.FriendApi
 import kr.gachon.adigo.data.remote.friend.FriendRemoteDataSource
 import kr.gachon.adigo.data.remote.push.PushApi
 import kr.gachon.adigo.data.remote.push.PushRemoteDataSource
+import kr.gachon.adigo.data.remote.user.UserApi
 import kr.gachon.adigo.data.remote.websocket.StompWebSocketClient
 import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketReceiver
 import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketSender
@@ -40,6 +41,7 @@ class AdigoApplication : Application() {
         lateinit var authRemote: AuthRemoteDataSource
         lateinit var friendRemote: FriendRemoteDataSource
         lateinit var pushRemote: PushRemoteDataSource
+        lateinit var userApi: UserApi
 
         lateinit var stompClient: StompWebSocketClient
         lateinit var wsReceiver: UserLocationWebSocketReceiver
@@ -81,6 +83,7 @@ class AdigoApplication : Application() {
 
         container.friendRemote = FriendRemoteDataSource(container.retrofit.create(FriendApi::class.java))
         container.pushRemote   = PushRemoteDataSource(container.retrofit.create(PushApi::class.java))
+        container.userApi      = container.retrofit.create(UserApi::class.java)
 
         // ─ WebSocket ─
         val appScope = CoroutineScope(SupervisorJob())
