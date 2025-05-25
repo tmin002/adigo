@@ -32,6 +32,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.data.model.dto.FriendshipRequestLookupDto
 import android.util.Log
@@ -300,6 +301,9 @@ fun MyPageBottomSheetContent() {
         )
     }
 
+    var showEditDialog by remember { mutableStateOf(false) }
+    var newNickname by remember { mutableStateOf("") }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -319,43 +323,97 @@ fun MyPageBottomSheetContent() {
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 프로필 이미지
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(60.dp))
-                        .background(MaterialTheme.colors.primary.copy(alpha = 0.15f))
-                        .clickable(enabled = !isLoading) { launcher.launch("image/*") },
-                    contentAlignment = Alignment.Center
+                // 프로필 이미지와 닉네임을 포함하는 Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp),
-                            color = MaterialTheme.colors.primary
-                        )
-                    } else if (currentUser?.profileImageURL?.isNotEmpty() == true) {
-                        AsyncImage(
-                            model = currentUser?.profileImageURL,
-                            contentDescription = "프로필 이미지",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Text(
-                            text = currentUser?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                            style = MaterialTheme.typography.h4
-                        )
+                    // 프로필 이미지
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(60.dp))
+                            .background(MaterialTheme.colors.primary.copy(alpha = 0.15f))
+                            .clickable(enabled = !isLoading) { launcher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colors.primary
+                            )
+                        } else if (currentUser?.profileImageURL?.isNotEmpty() == true) {
+                            AsyncImage(
+                                model = currentUser?.profileImageURL,
+                                contentDescription = "프로필 이미지",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = currentUser?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                                style = MaterialTheme.typography.h4
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // 닉네임과 수정 버튼을 포함하는 Column
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = currentUser?.name ?: "",
+                                style = MaterialTheme.typography.h5
+                            )
+                            IconButton(
+                                onClick = { showEditDialog = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "닉네임 수정",
+                                    tint = MaterialTheme.colors.primary
+                                )
+                            }
+                        }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // 프로필 이미지 변경 버튼
-                Text(
-                    text = "프로필 이미지 변경",
-                    style = MaterialTheme.typography.body2,
-                    color = if (isLoading) Color.Gray else MaterialTheme.colors.primary,
-                    modifier = Modifier.clickable(enabled = !isLoading) { launcher.launch("image/*") }
+            }
+
+            // 닉네임 수정 다이얼로그
+            if (showEditDialog) {
+                AlertDialog(
+                    onDismissRequest = { showEditDialog = false },
+                    title = { Text("닉네임 수정") },
+                    text = {
+                        Column {
+                            TextField(
+                                value = newNickname,
+                                onValueChange = { newNickname = it },
+                                singleLine = true,
+                                placeholder = { Text("새로운 닉네임을 입력하세요") }
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                // TODO: 백엔드 API 구현 후 닉네임 업데이트 로직 추가
+                                showEditDialog = false
+                            }
+                        ) {
+                            Text("저장")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showEditDialog = false }) {
+                            Text("취소")
+                        }
+                    }
                 )
             }
 
