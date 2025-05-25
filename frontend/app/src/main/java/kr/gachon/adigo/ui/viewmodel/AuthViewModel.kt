@@ -27,7 +27,10 @@ class AuthViewModel : ViewModel() {
     ) = viewModelScope.launch {
         authRemote.login(LoginRequest(email, password))
             .onSuccess { result ->
-                result?.data?.let { tokenMgr.saveTokens(it) }
+                result?.data?.let { 
+                    tokenMgr.saveTokens(it)
+                    tokenMgr.saveUserEmail(email)
+                }
 
                 // FCM 토큰을 서버에 등록 (토큰이 있을 때만)
                 registerDeviceTokenIfExists()

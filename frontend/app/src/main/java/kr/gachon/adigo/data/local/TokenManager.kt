@@ -43,6 +43,7 @@ class TokenManager(context: Context) {
         private const val JWT_KEY          = "jwt_token"
         private const val REFRESH_TOKEN_KEY= "refresh_token"
         private const val DEVICE_TOKEN_KEY = "device_token"
+        private const val USER_EMAIL_KEY   = "user_email"
     }
 
     /* ───────── JWT / Refresh 저장 ───────── */
@@ -52,6 +53,14 @@ class TokenManager(context: Context) {
             putString(REFRESH_TOKEN_KEY,res.refreshToken)
         }.apply()
     }
+
+    /* ───────── 이메일 저장 ───────── */
+    fun saveUserEmail(email: String) {
+        securePrefs.edit().putString(USER_EMAIL_KEY, email).apply()
+    }
+
+    /* ───────── 이메일 조회 ───────── */
+    fun getUserEmail(): String? = securePrefs.getString(USER_EMAIL_KEY, null)
 
     /* ───────── 디바이스 토큰 저장 (일반 prefs) ───────── */
     fun saveDeviceToken(token: String) {
@@ -87,5 +96,17 @@ class TokenManager(context: Context) {
     /* ───────── JWT·Refresh 제거 (디바이스 토큰은 유지) ───────── */
     fun clearTokens() {
         securePrefs.edit().clear().apply()
+    }
+
+    /* ───────── 현재 로그인한 사용자의 ID 조회 ───────── */
+    fun getCurrentUserId(): Long? {
+        val token = getJwtToken() ?: return null
+        return try {
+            val jwt = JWT.decode(token)
+            jwt.getClaim("id").asLong()
+        } catch (e: JWTDecodeException) {
+            Log.e("TokenManager", "Failed to decode JWT token", e)
+            null
+        }
     }
 }
