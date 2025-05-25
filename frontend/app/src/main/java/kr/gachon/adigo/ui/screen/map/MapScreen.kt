@@ -79,7 +79,11 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
             initialValue = SheetValue.PartiallyExpanded,
             skipHiddenState = true,
             confirmValueChange = { value ->
-                value != SheetValue.Hidden
+                when (value) {
+                    SheetValue.Expanded -> true
+                    SheetValue.PartiallyExpanded -> true
+                    SheetValue.Hidden -> false
+                }
             }
         )
     )
@@ -290,64 +294,70 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
             sheetContainerColor = MaterialTheme.colorScheme.surface,  // 바텀 시트 배경색 설정
             sheetDragHandle = null,  // 드래그 핸들 완전히 제거
             sheetContent = {
-                // Content changes based on selected tab
-                when (selectedContent) {
-                    BottomSheetContentType.FRIENDS -> {
-                        FriendsBottomSheetContent(
-                            friendScreenState = friendScreenState,
-                            onSelectFriend = { friend: UserEntity ->
-                                friendScreenState = FriendScreenState.Profile(friend)
-                                friends.firstOrNull { it.id == friend.id }?.let { friend ->
-                                    scope.launch {
-                                        cameraPositionState.animate(
-                                            update = CameraUpdateFactory.newLatLngZoom(
-                                                LatLng(friend.lat, friend.lng),
-                                                18f
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.6f) // 화면 높이의 85%로 제한
+                ) {
+                    // Content changes based on selected tab
+                    when (selectedContent) {
+                        BottomSheetContentType.FRIENDS -> {
+                            FriendsBottomSheetContent(
+                                friendScreenState = friendScreenState,
+                                onSelectFriend = { friend: UserEntity ->
+                                    friendScreenState = FriendScreenState.Profile(friend)
+                                    friends.firstOrNull { it.id == friend.id }?.let { friend ->
+                                        scope.launch {
+                                            cameraPositionState.animate(
+                                                update = CameraUpdateFactory.newLatLngZoom(
+                                                    LatLng(friend.lat, friend.lng),
+                                                    18f
+                                                )
                                             )
-                                        )
+                                        }
+                                    }
+                                },
+                                onNavigateToFriend = { friend: UserEntity ->
+                                    val friendLocation = friends.firstOrNull { it.id == friend.id }
+                                    if (friendLocation != null && currentLocation != null) {
+                                        scope.launch {
+                                            searchLoadToNaverMap(
+                                                context = context,
+                                                slat = currentLocation!!.latitude,
+                                                slng = currentLocation!!.longitude,
+                                                dlat = friendLocation.lat,
+                                                dlng = friendLocation.lng
+                                            )
+                                        }
+                                    }
+                                },
+                                onClickBack = {
+                                    friendScreenState = FriendScreenState.List
+                                }
+                            )
+                        }
+
+                        BottomSheetContentType.MYPAGE -> {
+                            MyPageBottomSheetContent()
+                        }
+
+                        BottomSheetContentType.SETTINGS -> {
+                            SettingsBottomSheetContent(
+                                onLogout = {
+                                    // 1) Token and Device Token 삭제
+                                    authViewModel.logout {
+                                        // 2) Disconnect WebSocket before navigating
+                                        stompClient.disconnect() // Explicitly disconnect
+
+                                        // 3) Navigate to onboard screen
+                                        navController.navigate("onboard") {
+                                            popUpTo("map") { inclusive = true } // Remove map from back stack
+                                            launchSingleTop = true // Avoid multiple copies
+                                        }
                                     }
                                 }
-                            },
-                            onNavigateToFriend = { friend: UserEntity ->
-                                val friendLocation = friends.firstOrNull { it.id == friend.id }
-                                if (friendLocation != null && currentLocation != null) {
-                                    scope.launch {
-                                        searchLoadToNaverMap(
-                                            context = context,
-                                            slat = currentLocation!!.latitude,
-                                            slng = currentLocation!!.longitude,
-                                            dlat = friendLocation.lat,
-                                            dlng = friendLocation.lng
-                                        )
-                                    }
-                                }
-                            },
-                            onClickBack = {
-                                friendScreenState = FriendScreenState.List
-                            }
-                        )
-                    }
-
-                    BottomSheetContentType.MYPAGE -> {
-                        MyPageBottomSheetContent()
-                    }
-
-                    BottomSheetContentType.SETTINGS -> {
-                        SettingsBottomSheetContent(
-                            onLogout = {
-                                // 1) Token and Device Token 삭제
-                                authViewModel.logout {
-                                    // 2) Disconnect WebSocket before navigating
-                                    stompClient.disconnect() // Explicitly disconnect
-
-                                    // 3) Navigate to onboard screen
-                                    navController.navigate("onboard") {
-                                        popUpTo("map") { inclusive = true } // Remove map from back stack
-                                        launchSingleTop = true // Avoid multiple copies
-                                    }
-                                }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             },
