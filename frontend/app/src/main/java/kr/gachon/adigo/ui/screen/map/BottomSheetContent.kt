@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,33 +18,32 @@ import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 import androidx.compose.runtime.*
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.TextButton
 import androidx.compose.material.TextField
+import androidx.compose.material.Divider
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import kr.adigo.adigo.database.entity.UserEntity
-import androidx.compose.material.Switch
-import androidx.compose.material.Divider
-import androidx.compose.material.ButtonDefaults
 import kr.gachon.adigo.data.model.dto.FriendshipRequestLookupDto
 import android.util.Log
 import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.material.Button
 import kr.gachon.adigo.data.remote.websocket.StompWebSocketClient
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextDecoration.Companion.None
 import kr.gachon.adigo.ui.viewmodel.MyPageViewModel
-import androidx.compose.material.CircularProgressIndicator
 
 
 // ===============================
@@ -67,6 +64,8 @@ fun FriendsBottomSheetContent(
     val friendRequests by friendlistviewModel.friendRequests.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     val friendLocations by AdigoApplication.AppContainer.userLocationRepo.friends.collectAsState(emptyList())
+    val myPageViewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
+    val currentUser by myPageViewModel.currentUser.collectAsState()
 
     LaunchedEffect(Unit) { 
         Log.d("BottomSheetContent", "LaunchedEffect triggered")
@@ -113,7 +112,7 @@ fun FriendsBottomSheetContent(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
                 LazyColumn {
-                    items(friends, key = { it.id }) { user ->
+                    items(friends.filter { it.id != currentUser?.id }, key = { it.id }) { user ->
                         FriendListItem(
                             user = user,
                             onClick = { onSelectFriend(user) },
