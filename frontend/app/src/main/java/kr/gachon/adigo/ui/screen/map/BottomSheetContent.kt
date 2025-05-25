@@ -12,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
@@ -420,8 +419,10 @@ fun MyPageBottomSheetContent() {
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                // TODO: 백엔드 API 구현 후 닉네임 업데이트 로직 추가
-                                showEditDialog = false
+                                if (newNickname.isNotBlank()) {
+                                    viewModel.updateNickname(newNickname)
+                                    showEditDialog = false
+                                }
                             }
                         ) {
                             Text("저장")

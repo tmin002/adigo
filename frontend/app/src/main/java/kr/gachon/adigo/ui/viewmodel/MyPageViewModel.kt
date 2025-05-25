@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.AdigoApplication
@@ -14,25 +15,22 @@ import kr.gachon.adigo.data.local.transformer.UserTransformer
 import kr.gachon.adigo.data.model.dto.FriendListResponse  // 서버 DTO
 import kr.gachon.adigo.data.model.dto.ProfileResponse
 import kr.gachon.adigo.data.model.global.User     // 도메인 모델
-import kr.gachon.adigo.data.remote.friend.FriendApi
-import kr.gachon.adigo.data.remote.user.UserApi
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
-import java.io.FileOutputStream
 
 class MyPageViewModel(
-    private val repo: UserDatabaseRepository
+    private val userDatabaseRepo: UserDatabaseRepository
 ) : ViewModel() {
     private val _currentUser = MutableStateFlow<UserEntity?>(null)
-    val currentUser: StateFlow<UserEntity?> = _currentUser
+    val currentUser: StateFlow<UserEntity?> = _currentUser.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
         loadCurrentUser()
@@ -41,71 +39,75 @@ class MyPageViewModel(
     private fun loadCurrentUser() {
         viewModelScope.launch {
             try {
-                _isLoading.value = true
-                _error.value = null
-
-                // 서버에서 현재 사용자 정보 가져오기
                 val response = AdigoApplication.AppContainer.userRemote.getCurrentUser()
                 if (response.isSuccessful) {
-                    response.body()?.let { userResponse ->
-                        // 서버 응답을 UserEntity로 변환하여 저장
-                        val userEntity = UserEntity().apply {
-                            id = userResponse.data.id
-                            email = userResponse.data.email
-                            name = userResponse.data.nickname
-                            profileImageURL = userResponse.data.profileImage ?: ""
-                            authority = userResponse.data.authority.name  // enum을 문자열로 변환
-                        }
-                        repo.upsert(userEntity)
+                    response.body()?.data?.let { user ->
+                        val userEntity = UserTransformer.modelToEntity(user)
+                        userDatabaseRepo.upsert(userEntity)
                         _currentUser.value = userEntity
                     }
                 } else {
-                    _error.value = "사용자 정보를 가져오는데 실패했습니다: ${response.message()}"
+                    _error.value = "사용자 정보를 불러오는데 실패했습니다"
                 }
             } catch (e: Exception) {
-                _error.value = "사용자 정보를 가져오는데 실패했습니다: ${e.message}\n${e.stackTraceToString()}"
+                _error.value = "사용자 정보를 불러오는데 실패했습니다: ${e.message}"
+            }
+        }
+    }
+
+    fun updateProfileImage(uri: Uri, context: Context) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val file = createMultipartBodyPart(uri, context)
+                val response = AdigoApplication.AppContainer.userRemote.uploadProfileImage(file)
+                if (response.isSuccessful) {
+                    response.body()?.data?.let { user ->
+                        val currentUser = _currentUser.value
+                        val updatedUser = user.copy(
+                            email = currentUser?.email ?: user.email,
+                            nickname = currentUser?.name ?: user.nickname,
+                            authority = User.Authority.valueOf(currentUser?.authority ?: user.authority.name)
+                        )
+                        val userEntity = UserTransformer.modelToEntity(updatedUser)
+                        userDatabaseRepo.upsert(userEntity)
+                        _currentUser.value = userEntity
+                    }
+                    loadCurrentUser()
+                } else {
+                    _error.value = "프로필 이미지 업로드에 실패했습니다"
+                }
+            } catch (e: Exception) {
+                _error.value = "프로필 이미지 업로드에 실패했습니다: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun updateProfileImage(imageUri: Uri, context: Context) {
+    fun updateNickname(nickname: String) {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                _isLoading.value = true
-                _error.value = null
-
-                // Uri를 File로 변환
-                val inputStream = context.contentResolver.openInputStream(imageUri)
-                val file = File(context.cacheDir, "temp_profile_image.jpg")
-                FileOutputStream(file).use { outputStream ->
-                    inputStream?.copyTo(outputStream)
-                }
-
-                // MultipartBody.Part 생성
-                val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
-                val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-
-                // API 호출
-                val response = AdigoApplication.AppContainer.userRemote.uploadProfileImage(body)
-                
+                val response = AdigoApplication.AppContainer.userRemote.updateNickname(nickname)
                 if (response.isSuccessful) {
-                    response.body()?.let { profileResponse ->
-                        // 서버 응답에서 프로필 이미지 URL을 가져와서 로컬 DB 업데이트
-                        _currentUser.value?.let { user ->
-                            val updatedUser = user.apply {
-                                profileImageURL = profileResponse.data.profileImage ?: ""
-                            }
-                            repo.upsert(updatedUser)
-                            _currentUser.value = updatedUser
-                        }
+                    response.body()?.data?.let { user ->
+                        val currentUser = _currentUser.value
+                        val updatedUser = user.copy(
+                            email = currentUser?.email ?: user.email,
+                            nickname = nickname,
+                            authority = User.Authority.valueOf(currentUser?.authority ?: user.authority.name)
+                        )
+                        val userEntity = UserTransformer.modelToEntity(updatedUser)
+                        userDatabaseRepo.upsert(userEntity)
+                        _currentUser.value = userEntity
                     }
+                    loadCurrentUser()
                 } else {
-                    _error.value = "프로필 이미지 업로드 실패: ${response.message()}"
+                    _error.value = "닉네임 변경에 실패했습니다"
                 }
             } catch (e: Exception) {
-                _error.value = "프로필 이미지 업로드 실패: ${e.message}\n${e.stackTraceToString()}"
+                _error.value = "닉네임 변경에 실패했습니다: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -114,5 +116,18 @@ class MyPageViewModel(
 
     fun clearError() {
         _error.value = null
+    }
+
+    private fun createMultipartBodyPart(uri: Uri, context: Context): MultipartBody.Part {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val file = File.createTempFile("profile_image", ".jpg", context.cacheDir)
+        inputStream?.use { input ->
+            file.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+
+        val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+        return MultipartBody.Part.createFormData("file", file.name, requestFile)
     }
 }
