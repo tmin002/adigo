@@ -12,26 +12,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.ui.viewmodel.FriendListViewModel
 import androidx.compose.runtime.*
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.TextButton
-import androidx.compose.material.TextField
-import androidx.compose.material.Divider
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.data.model.dto.FriendshipRequestLookupDto
 import android.util.Log
@@ -44,11 +33,40 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.platform.LocalContext
 import kr.gachon.adigo.ui.viewmodel.MyPageViewModel
+import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 
 
 // ===============================
 // Friends 탭 내부 (3가지 화면)
 // ===============================
+
+@Composable
+fun DragHandle() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .width(80.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+        )
+    }
+}
 
 @Composable
 fun FriendsBottomSheetContent(
@@ -75,8 +93,8 @@ fun FriendsBottomSheetContent(
         modifier = Modifier
             .fillMaxWidth()
             .height(400.dp)
-            .background(Color.White.copy(alpha = 0.7f))
-            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+            .padding(horizontal = 16.dp)
     ) {
         DragHandle()
 
@@ -88,7 +106,7 @@ fun FriendsBottomSheetContent(
                 if (friendRequests.isNotEmpty()) {
                     Text(
                         text = "친구 요청",
-                        style = MaterialTheme.typography.h6,
+                        style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                     LazyColumn {
@@ -106,7 +124,7 @@ fun FriendsBottomSheetContent(
                 // 친구 목록
                 Text(
                     text = "친구 목록",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
                 LazyColumn {
@@ -133,7 +151,7 @@ fun FriendsBottomSheetContent(
                     ) {
                         Text(
                             text = "친구 프로필",
-                            style = MaterialTheme.typography.h6
+                            style = MaterialTheme.typography.titleLarge
                         )
                         Text(
                             text = "뒤로",
@@ -165,12 +183,12 @@ fun FriendsBottomSheetContent(
                                 modifier = Modifier
                                     .size(100.dp)
                                     .clip(RoundedCornerShape(50.dp))
-                                    .background(MaterialTheme.colors.primary.copy(alpha = 0.15f)),
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = friend.name.first().uppercaseChar().toString(),
-                                    style = MaterialTheme.typography.h4
+                                    style = MaterialTheme.typography.headlineLarge
                                 )
                             }
                         }
@@ -180,7 +198,7 @@ fun FriendsBottomSheetContent(
                         // 이름
                         Text(
                             text = friend.name,
-                            style = MaterialTheme.typography.h5
+                            style = MaterialTheme.typography.headlineSmall
                         )
                         
                         Spacer(modifier = Modifier.height(8.dp))
@@ -188,8 +206,8 @@ fun FriendsBottomSheetContent(
                         // 이메일
                         Text(
                             text = friend.email,
-                            style = MaterialTheme.typography.body1,
-                            color = Color.Gray
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         
@@ -202,13 +220,13 @@ fun FriendsBottomSheetContent(
                                 .fillMaxWidth()
                                 .height(48.dp),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = MaterialTheme.colors.primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(
                                 text = "길 찾기",
-                                style = MaterialTheme.typography.button,
-                                color = Color.White
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -298,10 +316,13 @@ fun MyPageBottomSheetContent() {
         )
     }
 
+    var showEditDialog by remember { mutableStateOf(false) }
+    var newNickname by remember { mutableStateOf("") }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.95f))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         item {
@@ -313,47 +334,103 @@ fun MyPageBottomSheetContent() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF2F2F7))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 프로필 이미지
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(60.dp))
-                        .background(MaterialTheme.colors.primary.copy(alpha = 0.15f))
-                        .clickable(enabled = !isLoading) { launcher.launch("image/*") },
-                    contentAlignment = Alignment.Center
+                // 프로필 이미지와 닉네임을 포함하는 Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp),
-                            color = MaterialTheme.colors.primary
-                        )
-                    } else if (currentUser?.profileImageURL?.isNotEmpty() == true) {
-                        AsyncImage(
-                            model = currentUser?.profileImageURL,
-                            contentDescription = "프로필 이미지",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Text(
-                            text = currentUser?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                            style = MaterialTheme.typography.h4
-                        )
+                    // 프로필 이미지
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(60.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                            .clickable(enabled = !isLoading) { launcher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else if (currentUser?.profileImageURL?.isNotEmpty() == true) {
+                            AsyncImage(
+                                model = currentUser?.profileImageURL,
+                                contentDescription = "프로필 이미지",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = currentUser?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                                style = MaterialTheme.typography.headlineLarge
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // 닉네임과 수정 버튼을 포함하는 Column
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = currentUser?.name ?: "",
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                            IconButton(
+                                onClick = { showEditDialog = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "닉네임 수정",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // 프로필 이미지 변경 버튼
-                Text(
-                    text = "프로필 이미지 변경",
-                    style = MaterialTheme.typography.body2,
-                    color = if (isLoading) Color.Gray else MaterialTheme.colors.primary,
-                    modifier = Modifier.clickable(enabled = !isLoading) { launcher.launch("image/*") }
+            }
+
+            // 닉네임 수정 다이얼로그
+            if (showEditDialog) {
+                AlertDialog(
+                    onDismissRequest = { showEditDialog = false },
+                    title = { Text("닉네임 수정") },
+                    text = {
+                        Column {
+                            TextField(
+                                value = newNickname,
+                                onValueChange = { newNickname = it },
+                                singleLine = true,
+                                placeholder = { Text("새로운 닉네임을 입력하세요") }
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (newNickname.isNotBlank()) {
+                                    viewModel.updateNickname(newNickname)
+                                    showEditDialog = false
+                                }
+                            }
+                        ) {
+                            Text("저장")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showEditDialog = false }) {
+                            Text("취소")
+                        }
+                    }
                 )
             }
 
@@ -364,10 +441,10 @@ fun MyPageBottomSheetContent() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF2F2F7))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(16.dp)
             ) {
-                Text("연결 상태", style = MaterialTheme.typography.subtitle1)
+                Text("연결 상태", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 // WebSocket Connection Status
@@ -376,12 +453,12 @@ fun MyPageBottomSheetContent() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("서버 연결", style = MaterialTheme.typography.body1)
+                    Text("서버 연결", style = MaterialTheme.typography.bodyLarge)
                     Box(
                         modifier = Modifier
                             .size(12.dp)
                             .background(
-                                color = if (stompClient.stompConnected) Color.Green else Color.Red,
+                                color = if (stompClient.stompConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                 shape = CircleShape
                             )
                     )
@@ -395,11 +472,12 @@ fun MyPageBottomSheetContent() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("친구 위치 구독", style = MaterialTheme.typography.body1)
+                    Text("친구 위치 구독", style = MaterialTheme.typography.bodyLarge)
                     Box(
                         modifier = Modifier
                             .size(12.dp)
                             .background(
+
                                 color = if (stompClient.stompConnected && locationReceiver.listenJob?.isActive == true) Color.Green else Color.Red,
                                 shape = CircleShape
                             )
@@ -414,13 +492,13 @@ fun MyPageBottomSheetContent() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF2F2F7))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(16.dp)
             ) {
-                Text("나의 위치", style = MaterialTheme.typography.subtitle1)
+                Text("나의 위치", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("위치: 대한민국, 경기도", style = MaterialTheme.typography.body1)
-                Text("기기: 이 Android", style = MaterialTheme.typography.body1)
+                Text("위치: 대한민국, 경기도", style = MaterialTheme.typography.bodyLarge)
+                Text("기기: 이 Android", style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -435,46 +513,28 @@ fun SettingsBottomSheetContent(
         modifier = Modifier
             .fillMaxWidth()
             .height(400.dp)
-            .background(Color.White.copy(alpha = 0.7f))
-            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+            .padding(horizontal = 16.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
         ) {
             DragHandle()
-            Text(text = "설정", style = MaterialTheme.typography.h6)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "설정", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "여기에 앱 설정 관련 정보를 표시합니다.")
             Text(
                 text = "로그아웃",
-                style = MaterialTheme.typography.button,
+                style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colors.error.copy(alpha = 0.1f))
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .clickable {  onLogout()  }  // ← 여기서 호출
             )
         }
-    }
-}
-
-// 바텀시트 상단의 드래그 핸들
-@Composable
-fun DragHandle() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .width(80.dp)
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(Color.Gray.copy(alpha = 0.7f))
-        )
     }
 }
 
@@ -485,7 +545,7 @@ private fun Header(onAddFriendClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "친구 추가", style = MaterialTheme.typography.h6)
+        Text(text = "친구 추가", style = MaterialTheme.typography.titleLarge)
 
         IconButton(onClick = onAddFriendClick) {
             Icon(
@@ -527,7 +587,7 @@ private fun FriendListItem(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colors.primary.copy(alpha = 0.15f)),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(user.name.first().uppercaseChar().toString())
@@ -539,7 +599,7 @@ private fun FriendListItem(
         // 이름
         Text(
             text = user.name,
-            style = MaterialTheme.typography.subtitle1,
+            style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f)
         )
 
@@ -551,7 +611,7 @@ private fun FriendListItem(
             Icon(
                 imageVector = Icons.Default.Delete,
                 contentDescription = "삭제",
-                tint = MaterialTheme.colors.error
+                tint = MaterialTheme.colorScheme.error
             )
         }
     }
@@ -574,7 +634,7 @@ private fun FriendRequestItem(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colors.primary.copy(alpha = 0.15f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
             Text(request.requesterName.first().uppercaseChar().toString())
@@ -585,7 +645,7 @@ private fun FriendRequestItem(
         // 가운데 – 이름
         Text(
             text = request.requesterName,
-            style = MaterialTheme.typography.subtitle1,
+            style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f)
         )
 
@@ -594,7 +654,7 @@ private fun FriendRequestItem(
             TextButton(
                 onClick = onAccept,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colors.primary
+                    contentColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text("수락")
@@ -602,7 +662,7 @@ private fun FriendRequestItem(
             TextButton(
                 onClick = onReject,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colors.error
+                    contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
                 Text("거절")

@@ -11,4 +11,7 @@ class UserRemoteDataSource(
     
     suspend fun uploadProfileImage(file: MultipartBody.Part): Response<ProfileResponse> =
         api.uploadProfileImage(file)
+
+    suspend fun updateNickname(nickname: String): Response<ProfileResponse> =
+        api.updateNickname(NicknameUpdateRequest(nickname))
 } 

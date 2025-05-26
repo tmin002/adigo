@@ -16,8 +16,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.material.BottomSheetValue.Collapsed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Person
@@ -57,8 +55,20 @@ import androidx.compose.runtime.setValue
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import kr.gachon.adigo.ui.screen.Screens
 import java.io.IOException
+import androidx.compose.material3.*
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     // 1. Declare state variables at the top
@@ -66,7 +76,17 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     var isTracking by remember { mutableStateOf(false) }
 
     val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberBottomSheetState(initialValue = Collapsed)
+        bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.PartiallyExpanded,
+            skipHiddenState = true,
+            confirmValueChange = { value ->
+                when (value) {
+                    SheetValue.Expanded -> true
+                    SheetValue.PartiallyExpanded -> true
+                    SheetValue.Hidden -> false
+                }
+            }
+        )
     )
     val scope = rememberCoroutineScope()
 
@@ -249,58 +269,62 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     // 프로필 이미지 캐시를 위한 상태 맵
     val profileImageCache = remember { mutableStateMapOf<Long, BitmapDescriptor>() }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .navigationBarsPadding() // Handle system bars
+    Box(// navigationBarsPadding 대신 systemBarsPadding 사용
     ) {
         BottomSheetScaffold(
             scaffoldState = scaffoldState,
-            sheetPeekHeight = 144.dp, // Height when collapsed (adjust based on bottom bar + padding)
-            sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            sheetPeekHeight = 96.dp,
+            topBar = null,  // 상단 영역 제거
+            sheetContainerColor = MaterialTheme.colorScheme.surface,  // 바텀 시트 배경색 설정
+            sheetDragHandle = null,  // 드래그 핸들 완전히 제거
             sheetContent = {
-                // Content changes based on selected tab
-                when (selectedContent) {
-                    BottomSheetContentType.FRIENDS -> {
-                        FriendsBottomSheetContent(
-                            friendScreenState = friendScreenState,
-                            onSelectFriend = { friend: UserEntity ->
-                                friendScreenState = FriendScreenState.Profile(friend)
-                                // Optional: Move camera to friend's location if available
-                                friends.firstOrNull { it.id == friend.id }?.let { friend ->
-                                    scope.launch {
-                                        cameraPositionState.animate(
-                                            update = CameraUpdateFactory.newLatLngZoom(
-                                                LatLng(friend.lat, friend.lng),
-                                                18f
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.6f) // 화면 높이의 85%로 제한
+                ) {
+                    // Content changes based on selected tab
+                    when (selectedContent) {
+                        BottomSheetContentType.FRIENDS -> {
+                            FriendsBottomSheetContent(
+                                friendScreenState = friendScreenState,
+                                onSelectFriend = { friend: UserEntity ->
+                                    friendScreenState = FriendScreenState.Profile(friend)
+                                    friends.firstOrNull { it.id == friend.id }?.let { friend ->
+                                        scope.launch {
+                                            cameraPositionState.animate(
+                                                update = CameraUpdateFactory.newLatLngZoom(
+                                                    LatLng(friend.lat, friend.lng),
+                                                    18f
+                                                )
                                             )
-                                        )
+                                        }
                                     }
-                                }
-                            },
-                            onNavigateToFriend = { friend: UserEntity ->
-                                // 친구의 현재 위치 조회
-                                val friendLocation = friends.firstOrNull { it.id == friend.id }
-                                if (friendLocation != null && currentLocation != null) {
-                                    scope.launch {
-                                        searchLoadToNaverMap(
-                                            context = context,
-                                            slat = currentLocation!!.latitude,
-                                            slng = currentLocation!!.longitude,
-                                            dlat = friendLocation.lat,
-                                            dlng = friendLocation.lng
-                                        )
+                                },
+                                onNavigateToFriend = { friend: UserEntity ->
+                                    val friendLocation = friends.firstOrNull { it.id == friend.id }
+                                    if (friendLocation != null && currentLocation != null) {
+                                        scope.launch {
+                                            searchLoadToNaverMap(
+                                                context = context,
+                                                slat = currentLocation!!.latitude,
+                                                slng = currentLocation!!.longitude,
+                                                dlat = friendLocation.lat,
+                                                dlng = friendLocation.lng
+                                            )
+                                        }
                                     }
+                                },
+                                onClickBack = {
+                                    friendScreenState = FriendScreenState.List
                                 }
-                            },
-                            onClickBack = {
-                                friendScreenState = FriendScreenState.List
-                            }
-                        )
-                    }
+                            )
+                        }
 
-                    BottomSheetContentType.MYPAGE -> {
-                        MyPageBottomSheetContent()
-                    }
+                        BottomSheetContentType.MYPAGE -> {
+                            MyPageBottomSheetContent()
+                        }
+
 
                     BottomSheetContentType.SETTINGS -> {
                         SettingsBottomSheetContent(
@@ -311,15 +335,16 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                                     // 4) 온보드 화면으로 네비게이션 (백스택 초기화)
                                     navController.navigate(Screens.OnBoard.name) {
                                         popUpTo(Screens.Main.name) { inclusive = true }
-                                        launchSingleTop = true
+
                                     }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
-            }
-
+            },
+            sheetSwipeEnabled = true,
+            modifier = Modifier.fillMaxSize()
         ) { innerPadding ->
             // 지도 부분
             Box(
@@ -335,7 +360,10 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                     },
                     modifier = Modifier
                         .padding(16.dp)
-                        .zIndex(2f)
+                        .zIndex(2f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
                     Text("WebSocket 테스트")
                 }
@@ -421,17 +449,14 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
             }
         }
         // 하단 고정 버튼 바
-        // Ensure this doesn't overlap with the bottom sheet when expanded past peek height
-        // zIndex helps, but proper layout/padding or adjusting sheet max height is better.
-        // For now, zIndex + navigationBarsPadding helps keep it above some UI.
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .height(80.dp) // Fixed height for the bar
-                .background(Color.White)
-                .zIndex(1f) // Ensure it's above the map but below the sheet content
-                .padding(bottom = 16.dp), // Add padding below buttons inside the bar
+                .height(80.dp)
+                .background(MaterialTheme.colorScheme.surface)
+                .zIndex(1f)
+                .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
