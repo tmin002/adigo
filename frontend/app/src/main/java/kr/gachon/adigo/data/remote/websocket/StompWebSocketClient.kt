@@ -34,6 +34,7 @@ class StompWebSocketClient(
 ) {
 
     private val TAG = "StompWebSocketClient"
+    private val defaultDestinations = listOf("/user/queue/friendsLocationResponse")
 
     private var webSocket: WebSocket? = null
     var stompConnected = false
@@ -59,13 +60,14 @@ class StompWebSocketClient(
             .build()
     }
 
+    fun isSubscribed(dest: String): Boolean =
+        subscriptions.containsKey(dest)
+
     private val webSocketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.d(TAG, "WebSocket opened: ${response.code}")
             // Send STOMP CONNECT frame after raw WebSocket is open
             sendConnectFrame()
-            // Re-subscribe to destinations if needed
-            resubscribeOnConnect()
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -139,6 +141,12 @@ class StompWebSocketClient(
             "CONNECTED" -> {
                 stompConnected = true
                 Log.i(TAG, "STOMP CONNECTED. Session: ${headers["session"]}")
+                defaultDestinations.forEach { dest ->
+                    if(!subscriptions.contains(dest)){
+                        subscribe(dest)
+                    }
+                }
+                resubscribeOnConnect()
             }
             "MESSAGE" -> {
                 val destination = headers["destination"]

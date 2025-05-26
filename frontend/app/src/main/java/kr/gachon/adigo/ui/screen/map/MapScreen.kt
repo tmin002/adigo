@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import kr.gachon.adigo.ui.screen.Screens
 import java.io.IOException
 import androidx.compose.material3.*
 import androidx.compose.material3.BottomSheetScaffold
@@ -141,42 +142,25 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
 
-        // Send Device Token (already in MainActivity, but maybe ensure here too)
-        // authViewModel.sendDeviceToken() // Consider where this is best placed - once per app install/login is typical
 
-        // Connect WebSocket
-        Log.d("MapScreen", "Connecting WebSocket client")
-        stompClient.connect()
-
-        // Start receiving friend locations
-        Log.d("MapScreen", "Starting location receiver listening")
-        locationReceiver.startListening()
-
-        // Request initial friend locations after a delay to allow connection
-        // Start UserLocationProviderService
-        val serviceIntent = Intent(context, kr.gachon.adigo.background.UserLocationProviderService::class.java)
-        ContextCompat.startForegroundService(context, serviceIntent)
-        Log.i("MapScreen", "UserLocationProviderService started from MapScreen")
-        scope.launch {
-            delay(2000) // Give WebSocket a moment to connect
-            if (stompClient.stompConnected) { // Check if STOMP is connected
-                Log.d("MapScreen", "Requesting initial friend locations")
-                locationSender.requestFriendLocations()
-            } else {
-                Log.w("MapScreen", "STOMP not connected, skipping initial friend location request")
-            }
-        }
+//        // Connect WebSocket
+//        Log.d("MapScreen", "Connecting WebSocket client")
+//        stompClient.connect()
+//
+//
+//
+//
+//        scope.launch {
+//            delay(2000) // Give WebSocket a moment to connect
+//            if (stompClient.stompConnected) { // Check if STOMP is connected
+//                Log.d("MapScreen", "Requesting initial friend locations")
+//                locationSender.requestFriendLocations()
+//            } else {
+//                Log.w("MapScreen", "STOMP not connected, skipping initial friend location request")
+//            }
+//        }
 
 
-    }
-
-    // Clean up WebSocket connection on dispose
-    DisposableEffect(Unit) {
-        onDispose {
-            Log.d("MapScreen", "MapScreen disposed. Stopping location receiver and disconnecting WebSocket client.")
-            locationReceiver.stopListening()
-            stompClient.disconnect()
-        }
     }
 
     // 지도가 움직이면 내 위치 추적 해제
@@ -341,19 +325,17 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                             MyPageBottomSheetContent()
                         }
 
-                        BottomSheetContentType.SETTINGS -> {
-                            SettingsBottomSheetContent(
-                                onLogout = {
-                                    // 1) Token and Device Token 삭제
-                                    authViewModel.logout {
-                                        // 2) Disconnect WebSocket before navigating
-                                        stompClient.disconnect() // Explicitly disconnect
 
-                                        // 3) Navigate to onboard screen
-                                        navController.navigate("onboard") {
-                                            popUpTo("map") { inclusive = true } // Remove map from back stack
-                                            launchSingleTop = true // Avoid multiple copies
-                                        }
+                    BottomSheetContentType.SETTINGS -> {
+                        SettingsBottomSheetContent(
+                            onLogout = {
+                                // 1) 토큰 클리어 & 로그인 상태 플래그 갱신
+                                authViewModel.logout {
+
+                                    // 4) 온보드 화면으로 네비게이션 (백스택 초기화)
+                                    navController.navigate(Screens.OnBoard.name) {
+                                        popUpTo(Screens.Main.name) { inclusive = true }
+
                                     }
                                 }
                             )

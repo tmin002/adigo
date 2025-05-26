@@ -74,9 +74,7 @@ fun FriendsBottomSheetContent(
     onSelectFriend: (UserEntity) -> Unit,
     onNavigateToFriend: (UserEntity) -> Unit,
     onClickBack: () -> Unit,
-    friendlistviewModel: FriendListViewModel = remember {
-        FriendListViewModel(repo = AdigoApplication.AppContainer.userDatabaseRepo)
-    }
+    friendlistviewModel: FriendListViewModel = AdigoApplication.AppContainer.friendListViewModel
 ) {
     val friends by friendlistviewModel.friends.collectAsState(emptyList())
     val friendRequests by friendlistviewModel.friendRequests.collectAsState()
@@ -479,7 +477,8 @@ fun MyPageBottomSheetContent() {
                         modifier = Modifier
                             .size(12.dp)
                             .background(
-                                color = if (stompClient.stompConnected && locationReceiver.receiverJob?.isActive == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+
+                                color = if (stompClient.stompConnected && locationReceiver.listenJob?.isActive == true) Color.Green else Color.Red,
                                 shape = CircleShape
                             )
                     )

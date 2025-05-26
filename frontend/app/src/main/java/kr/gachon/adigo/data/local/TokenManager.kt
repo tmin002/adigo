@@ -7,6 +7,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kr.gachon.adigo.data.model.dto.LoginResponse
+import java.util.Date
 import javax.crypto.AEADBadTagException
 
 class TokenManager(context: Context) {
@@ -96,6 +97,21 @@ class TokenManager(context: Context) {
     /* ───────── JWT·Refresh 제거 (디바이스 토큰은 유지) ───────── */
     fun clearTokens() {
         securePrefs.edit().clear().apply()
+    }
+
+    /**
+     * 액세스 토큰이 저장되어 있고, 만료되지 않았으면 true
+     */
+    fun hasValidToken(): Boolean {
+        val token = getJwtToken() ?: return false
+        return try {
+            val decoded = JWT.decode(token)
+            val exp = decoded.expiresAt
+            exp != null && exp.after(Date()).also { Log.d("TokenManager", "hasValidToken: $it") }
+        } catch (e: JWTDecodeException) {
+            Log.e("TokenManager", "토큰 디코딩 실패", e)
+            false
+        }
     }
 
     /* ───────── 현재 로그인한 사용자의 ID 조회 ───────── */
