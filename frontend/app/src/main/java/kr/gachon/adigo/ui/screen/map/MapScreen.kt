@@ -22,8 +22,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
@@ -192,59 +192,72 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     Box(modifier = Modifier.fillMaxSize()) {
         BottomSheetScaffold(
             scaffoldState = scaffoldState,
-            sheetPeekHeight = 96.dp,
+            sheetPeekHeight = with(LocalDensity.current) {
+                80.dp + WindowInsets.navigationBars.getBottom(LocalDensity.current).toDp()
+            },
             sheetContainerColor = MaterialTheme.colorScheme.surface,
             sheetDragHandle = null,
             sheetSwipeEnabled = true,
             sheetContent = {
-                when (selectedContent) {
-                    BottomSheetContentType.FRIENDS -> {
-                        FriendsBottomSheetContent(
-                            friendScreenState = friendScreenState,
-                            onSelectFriend = { friend ->
-                                friendScreenState = FriendScreenState.Profile(friend)
-                                friends.firstOrNull { it.id == friend.id }?.let { fl ->
-                                    scope.launch {
-                                        cameraPositionState.animate(
-                                            CameraUpdateFactory.newLatLngZoom(LatLng(fl.lat, fl.lng), 18f)
-                                        )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.6f) // 화면 높이의 60%로 제한
+                ) {
+                    when (selectedContent) {
+                        BottomSheetContentType.FRIENDS -> {
+                            FriendsBottomSheetContent(
+                                friendScreenState = friendScreenState,
+                                onSelectFriend = { friend ->
+                                    friendScreenState = FriendScreenState.Profile(friend)
+                                    friends.firstOrNull { it.id == friend.id }?.let { fl ->
+                                        scope.launch {
+                                            cameraPositionState.animate(
+                                                CameraUpdateFactory.newLatLngZoom(
+                                                    LatLng(
+                                                        fl.lat,
+                                                        fl.lng
+                                                    ), 18f
+                                                )
+                                            )
+                                        }
                                     }
-                                }
-                            },
-                            onNavigateToFriend = { friend ->
-                                val dest = friends.firstOrNull { it.id == friend.id }
-                                if (dest != null && currentLocation != null) {
-                                    scope.launch {
-                                        searchLoadToNaverMap(
-                                            context,
-                                            currentLocation!!.latitude,
-                                            currentLocation!!.longitude,
-                                            dest.lat,
-                                            dest.lng
-                                        )
+                                },
+                                onNavigateToFriend = { friend ->
+                                    val dest = friends.firstOrNull { it.id == friend.id }
+                                    if (dest != null && currentLocation != null) {
+                                        scope.launch {
+                                            searchLoadToNaverMap(
+                                                context,
+                                                currentLocation!!.latitude,
+                                                currentLocation!!.longitude,
+                                                dest.lat,
+                                                dest.lng
+                                            )
+                                        }
                                     }
+                                },
+                                onClickBack = {
+                                    friendScreenState = FriendScreenState.List
                                 }
-                            },
-                            onClickBack = {
-                                friendScreenState = FriendScreenState.List
-                            }
-                        )
-                    }
+                            )
+                        }
 
-                    BottomSheetContentType.MYPAGE -> {
-                        MyPageBottomSheetContent()
-                    }
+                        BottomSheetContentType.MYPAGE -> {
+                            MyPageBottomSheetContent()
+                        }
 
-                    BottomSheetContentType.SETTINGS -> {
-                        SettingsBottomSheetContent(
-                            onLogout = {
-                                authViewModel.logout {
-                                    navController.navigate(Screens.OnBoard.name) {
-                                        popUpTo(Screens.Main.name) { inclusive = true }
+                        BottomSheetContentType.SETTINGS -> {
+                            SettingsBottomSheetContent(
+                                onLogout = {
+                                    authViewModel.logout {
+                                        navController.navigate(Screens.OnBoard.name) {
+                                            popUpTo(Screens.Main.name) { inclusive = true }
+                                        }
                                     }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             },
@@ -331,10 +344,16 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .height(80.dp)
+                .height(with(LocalDensity.current) {
+                    (60.dp + WindowInsets.navigationBars.getBottom(LocalDensity.current).toDp())
+                })
                 .background(MaterialTheme.colorScheme.surface)
                 .zIndex(1f)
-                .padding(bottom = 16.dp),
+                .padding(
+                    bottom = with(LocalDensity.current) {
+                        WindowInsets.navigationBars.getBottom(LocalDensity.current).toDp() + 16.dp
+                    }
+                ),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {

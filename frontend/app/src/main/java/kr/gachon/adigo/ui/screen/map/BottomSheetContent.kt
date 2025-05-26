@@ -56,7 +56,7 @@ fun DragHandle() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
