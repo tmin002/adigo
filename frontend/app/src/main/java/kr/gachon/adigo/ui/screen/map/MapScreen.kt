@@ -13,13 +13,12 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +29,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.request.RequestOptions
 import com.google.android.gms.location.*
@@ -43,35 +43,17 @@ import kotlinx.coroutines.*
 import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.background.UserLocationProviderService
+import kr.gachon.adigo.ui.screen.Screens
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
+import java.io.IOException
 import java.net.URLEncoder
 import java.util.Locale
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import kr.gachon.adigo.ui.screen.Screens
-import java.io.IOException
-import androidx.compose.material3.*
-import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberBottomSheetScaffoldState
-import androidx.compose.material3.rememberStandardBottomSheetState
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
-    // 1. Declare state variables at the top
+    // ---------- State ----------
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
     var isTracking by remember { mutableStateOf(false) }
 
@@ -80,34 +62,32 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
             initialValue = SheetValue.PartiallyExpanded,
             skipHiddenState = true,
             confirmValueChange = { value ->
-                when (value) {
-                    SheetValue.Expanded -> true
-                    SheetValue.PartiallyExpanded -> true
-                    SheetValue.Hidden -> false
-                }
+                value != SheetValue.Hidden
             }
         )
     )
     val scope = rememberCoroutineScope()
 
-    // Get WebSocket components from Application
+    // ---------- App-wide singletons ----------
     val stompClient = remember { AdigoApplication.AppContainer.stompClient }
     val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
     val locationSender = remember { AdigoApplication.AppContainer.wsSender }
 
-    val friendLocationViewModel = FriendLocationViewModel(AdigoApplication.AppContainer.userLocationRepo)
+    val friendLocationViewModel = remember {
+        FriendLocationViewModel(AdigoApplication.AppContainer.userLocationRepo)
+    }
     val friends by friendLocationViewModel.friends.collectAsState()
 
     var selectedContent by remember { mutableStateOf(BottomSheetContentType.FRIENDS) }
     var friendScreenState by remember { mutableStateOf<FriendScreenState>(FriendScreenState.List) }
 
-    // 지도 카메라 위치 예시 (서울)
+    // ---------- Map camera ----------
     val seoul = LatLng(37.56, 126.97)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(seoul, 10f)
     }
 
-    //위치권한
+    // ---------- Permission ----------
     val context = LocalContext.current
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -123,251 +103,167 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     ) { granted ->
         hasLocationPermission = granted
         if (granted) {
-            // If permission is granted after requesting, try to get last location and start tracking
             val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-            val location = fusedLocationClient.lastLocation
-            location.addOnSuccessListener { loc: Location? ->
+            fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
                 loc?.let {
                     currentLocation = LatLng(it.latitude, it.longitude)
-                    isTracking = true // Start tracking once permission is granted and location is available
+                    isTracking = true
                 }
             }
         }
     }
 
-    // 앱 시작 시 권한 요청 및 WebSocket 연결/구독/요청
+    // ---------- Side-effects ----------
     LaunchedEffect(Unit) {
-        // Request Location Permission if not granted
         if (!hasLocationPermission) {
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
-
-
-//        // Connect WebSocket
-//        Log.d("MapScreen", "Connecting WebSocket client")
-//        stompClient.connect()
-//
-//
-//
-//
-//        scope.launch {
-//            delay(2000) // Give WebSocket a moment to connect
-//            if (stompClient.stompConnected) { // Check if STOMP is connected
-//                Log.d("MapScreen", "Requesting initial friend locations")
-//                locationSender.requestFriendLocations()
-//            } else {
-//                Log.w("MapScreen", "STOMP not connected, skipping initial friend location request")
-//            }
-//        }
-
-
     }
 
-    // 지도가 움직이면 내 위치 추적 해제
     LaunchedEffect(cameraPositionState.position) {
         if (isTracking) {
-            isTracking = false
-            Log.d("MapScreen", "Camera moved after user interaction. Tracking disabled.")
+            isTracking = false // user moved the map
         }
     }
 
-    //만약 위치 권한이 있으면 마지막 위치 받아오기 (Initial location)
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission) {
             val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-            // Use GlobalScope or applicationScope if this needs to survive beyond MapScreen lifecycle
-            // But typically, you only need last known location when the map screen is active.
-            // For this case, LaunchedEffect tied to MapScreen is fine.
             try {
-                val location = fusedLocationClient.lastLocation
-                location.addOnSuccessListener { loc: Location? ->
-                    loc?.let {
-                        currentLocation = LatLng(it.latitude, it.longitude)
-                        // Option: Start tracking automatically when location is found and permission is granted
-                        // isTracking = true
-                        Log.d("MapScreen", "Got last known location: ${it.latitude}, ${it.longitude}")
-                    } ?: Log.w("MapScreen", "Last known location is null.")
-                }
-                    .addOnFailureListener { e ->
-                        Log.e("MapScreen", "Failed to get last known location", e)
-                    }
-            } catch (e: SecurityException) {
-                // This should not happen if hasLocationPermission is true, but good practice to catch
-                Log.e("MapScreen", "Security exception getting last location", e)
-            }
-        }
-    }
-
-    //위치 업데이트 요청 Callback
-    val fusedLocationClient = remember{ LocationServices.getFusedLocationProviderClient(context)}
-    val locationRequest = remember{
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L) // Update every 5 seconds
-            .setMinUpdateIntervalMillis(1000L) // No faster than every 1 second
-            .build()
-    }
-
-    // 실시간 위치 업데이트 리스너
-    val locationCallback = remember {
-        object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                val loc = locationResult.lastLocation ?: return
-                val newLatLng = LatLng(loc.latitude, loc.longitude)
-                currentLocation = newLatLng
-                Log.v("MapScreen", "Location updated: ${newLatLng.latitude}, ${newLatLng.longitude}")
-
-                // My location tracking: move camera if enabled
-                if (isTracking) {
-                    scope.launch {
-                        try {
-                            cameraPositionState.animate(
-                                CameraUpdateFactory.newLatLngZoom(newLatLng, 18f) // Adjust zoom as needed
-                            )
-                            Log.d("MapScreen", "Camera animated to current location.")
-                        } catch (e: Exception) {
-                            Log.e("MapScreen", "Error animating camera to current location", e)
+                fusedLocationClient.lastLocation
+                    .addOnSuccessListener { loc ->
+                        loc?.let {
+                            currentLocation = LatLng(it.latitude, it.longitude)
                         }
                     }
+                    .addOnFailureListener { e ->
+                        Log.e("MapScreen", "Failed lastLocation", e)
+                    }
+            } catch (se: SecurityException) {
+                Log.e("MapScreen", "SecurityException", se)
+            }
+        }
+    }
+
+    // ---------- Real-time location updates ----------
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val locationRequest = remember {
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L)
+            .setMinUpdateIntervalMillis(1000L)
+            .build()
+    }
+    val locationCallback = remember {
+        object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                val loc = result.lastLocation ?: return
+                val newPos = LatLng(loc.latitude, loc.longitude)
+                currentLocation = newPos
+                if (isTracking) {
+                    scope.launch {
+                        cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(newPos, 18f))
+                    }
                 }
             }
         }
     }
 
-    // Start/Stop Location Updates based on hasLocationPermission
     DisposableEffect(hasLocationPermission) {
         if (hasLocationPermission) {
             try {
                 fusedLocationClient.requestLocationUpdates(
                     locationRequest,
                     locationCallback,
-                    Looper.getMainLooper() // Use main looper for callbacks
+                    Looper.getMainLooper()
                 )
-                Log.d("MapScreen", "Location updates requested.")
-            } catch (e: SecurityException) {
-                Log.e("MapScreen", "Security exception requesting location updates", e)
-                // Handle gracefully - maybe set hasLocationPermission to false
+            } catch (se: SecurityException) {
+                Log.e("MapScreen", "requestLocationUpdates", se)
             }
-        } else {
-            // Permission revoked or not granted
-            fusedLocationClient.removeLocationUpdates(locationCallback)
-            Log.d("MapScreen", "Location updates removed (permission denied).")
-            isTracking = false // Stop tracking if permission is lost
         }
 
-        // Clean up listener when the effect is disposed
         onDispose {
             fusedLocationClient.removeLocationUpdates(locationCallback)
-            Log.d("MapScreen", "Location updates removed on DisposeEffect.")
         }
     }
 
-    // Logic to automatically re-center map on user if tracking is true and user hasn't interacted
-    // This requires tracking user interaction, which is tricky with GoogleMap compose currently.
-    // A simpler approach is to have a dedicated button to toggle `isTracking`.
-    // Let's add a button for "My Location" that sets isTracking=true and moves the camera.
-    // The onMapClick listener will set isTracking=false.
-
-    // 프로필 이미지 캐시를 위한 상태 맵
+    // ---------- Image cache ----------
     val profileImageCache = remember { mutableStateMapOf<Long, BitmapDescriptor>() }
 
-    Box(// navigationBarsPadding 대신 systemBarsPadding 사용
-    ) {
+    // ---------- UI ----------
+    Box(modifier = Modifier.fillMaxSize()) {
         BottomSheetScaffold(
             scaffoldState = scaffoldState,
             sheetPeekHeight = 96.dp,
-            topBar = null,  // 상단 영역 제거
-            sheetContainerColor = MaterialTheme.colorScheme.surface,  // 바텀 시트 배경색 설정
-            sheetDragHandle = null,  // 드래그 핸들 완전히 제거
+            sheetContainerColor = MaterialTheme.colorScheme.surface,
+            sheetDragHandle = null,
+            sheetSwipeEnabled = true,
             sheetContent = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(0.6f) // 화면 높이의 85%로 제한
-                ) {
-                    // Content changes based on selected tab
-                    when (selectedContent) {
-                        BottomSheetContentType.FRIENDS -> {
-                            FriendsBottomSheetContent(
-                                friendScreenState = friendScreenState,
-                                onSelectFriend = { friend: UserEntity ->
-                                    friendScreenState = FriendScreenState.Profile(friend)
-                                    friends.firstOrNull { it.id == friend.id }?.let { friend ->
-                                        scope.launch {
-                                            cameraPositionState.animate(
-                                                update = CameraUpdateFactory.newLatLngZoom(
-                                                    LatLng(friend.lat, friend.lng),
-                                                    18f
-                                                )
-                                            )
-                                        }
+                when (selectedContent) {
+                    BottomSheetContentType.FRIENDS -> {
+                        FriendsBottomSheetContent(
+                            friendScreenState = friendScreenState,
+                            onSelectFriend = { friend ->
+                                friendScreenState = FriendScreenState.Profile(friend)
+                                friends.firstOrNull { it.id == friend.id }?.let { fl ->
+                                    scope.launch {
+                                        cameraPositionState.animate(
+                                            CameraUpdateFactory.newLatLngZoom(LatLng(fl.lat, fl.lng), 18f)
+                                        )
                                     }
-                                },
-                                onNavigateToFriend = { friend: UserEntity ->
-                                    val friendLocation = friends.firstOrNull { it.id == friend.id }
-                                    if (friendLocation != null && currentLocation != null) {
-                                        scope.launch {
-                                            searchLoadToNaverMap(
-                                                context = context,
-                                                slat = currentLocation!!.latitude,
-                                                slng = currentLocation!!.longitude,
-                                                dlat = friendLocation.lat,
-                                                dlng = friendLocation.lng
-                                            )
-                                        }
-                                    }
-                                },
-                                onClickBack = {
-                                    friendScreenState = FriendScreenState.List
                                 }
-                            )
-                        }
+                            },
+                            onNavigateToFriend = { friend ->
+                                val dest = friends.firstOrNull { it.id == friend.id }
+                                if (dest != null && currentLocation != null) {
+                                    scope.launch {
+                                        searchLoadToNaverMap(
+                                            context,
+                                            currentLocation!!.latitude,
+                                            currentLocation!!.longitude,
+                                            dest.lat,
+                                            dest.lng
+                                        )
+                                    }
+                                }
+                            },
+                            onClickBack = {
+                                friendScreenState = FriendScreenState.List
+                            }
+                        )
+                    }
 
-                        BottomSheetContentType.MYPAGE -> {
-                            MyPageBottomSheetContent()
-                        }
-
+                    BottomSheetContentType.MYPAGE -> {
+                        MyPageBottomSheetContent()
+                    }
 
                     BottomSheetContentType.SETTINGS -> {
                         SettingsBottomSheetContent(
                             onLogout = {
-                                // 1) 토큰 클리어 & 로그인 상태 플래그 갱신
                                 authViewModel.logout {
-
-                                    // 4) 온보드 화면으로 네비게이션 (백스택 초기화)
                                     navController.navigate(Screens.OnBoard.name) {
                                         popUpTo(Screens.Main.name) { inclusive = true }
-
                                     }
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
                 }
             },
-            sheetSwipeEnabled = true,
             modifier = Modifier.fillMaxSize()
         ) { innerPadding ->
-            // 지도 부분
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentAlignment = Alignment.TopCenter // Change to TopCenter for button
+                contentAlignment = Alignment.TopCenter
             ) {
-                // WebSocket 테스트로 이동하는 버튼
                 Button(
-                    onClick = {
-                        navController.navigate("websocket_test")
-                    },
+                    onClick = { navController.navigate("websocket_test") },
                     modifier = Modifier
                         .padding(16.dp)
                         .zIndex(2f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text("WebSocket 테스트")
-                }
-                // 지도는 버튼 아래에 위치
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) { Text("WebSocket 테스트") }
+
                 Box(modifier = Modifier.fillMaxSize().zIndex(1f)) {
                     GoogleMap(
                         modifier = Modifier.fillMaxSize(),
@@ -388,41 +284,26 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                                     cameraPositionState.animate(
                                         CameraUpdateFactory.newLatLngZoom(currentLocation!!, 18f)
                                     )
-                                    Log.d("MapScreen", "My Location button clicked. Tracking enabled and camera moved.")
                                 }
                                 true
-                            } else {
-                                false
-                            }
+                            } else false
                         },
-                        onMapClick = {
-                            isTracking = false
-                            Log.d("MapScreen", "Map clicked. Tracking disabled.")
-                        },
-                        onMapLongClick = {
-                            isTracking = false
-                            Log.d("MapScreen", "Map long clicked. Tracking disabled.")
-                        }
+                        onMapClick = { isTracking = false },
+                        onMapLongClick = { isTracking = false }
                     ) {
                         friends.forEach { userLocation ->
-                            // 1. id로 UserEntity 조회
                             val userEntity = AdigoApplication.AppContainer.userDatabaseRepo.getUserById(userLocation.id)
                             val profileUrl = userEntity?.profileImageURL
 
-                            // 2. 프로필 이미지를 비트맵으로 변환 (캐시 사용)
-                            val context = LocalContext.current
                             val markerIcon by remember(userLocation.id, profileUrl) {
                                 derivedStateOf {
                                     if (profileUrl != null) {
                                         profileImageCache.getOrPut(userLocation.id) {
-                                            // 캐시에 없으면 로드
-                                            val bitmap = runBlocking { loadProfileBitmap(context, profileUrl) }
-                                            bitmap?.let { BitmapDescriptorFactory.fromBitmap(it) }
+                                            val bmp = runBlocking { loadProfileBitmap(context, profileUrl) }
+                                            bmp?.let { BitmapDescriptorFactory.fromBitmap(it) }
                                                 ?: BitmapDescriptorFactory.defaultMarker()
                                         }
-                                    } else {
-                                        BitmapDescriptorFactory.defaultMarker()
-                                    }
+                                    } else BitmapDescriptorFactory.defaultMarker()
                                 }
                             }
 
@@ -431,13 +312,9 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 title = userEntity?.name ?: userLocation.id.toString(),
                                 icon = markerIcon,
                                 onClick = { marker ->
-                                    Log.d("MapScreen", "Friend marker clicked: ${marker.title}")
                                     scope.launch {
                                         cameraPositionState.animate(
-                                            update = CameraUpdateFactory.newLatLngZoom(
-                                                marker.position,
-                                                18f
-                                            )
+                                            CameraUpdateFactory.newLatLngZoom(marker.position, 18f)
                                         )
                                     }
                                     true
@@ -448,7 +325,8 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                 }
             }
         }
-        // 하단 고정 버튼 바
+
+        // ---------- Fixed bottom button bar ----------
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -465,7 +343,7 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                 label = "친구",
                 onClick = {
                     selectedContent = BottomSheetContentType.FRIENDS
-                    friendScreenState = FriendScreenState.List // Reset to list when selecting friends tab
+                    friendScreenState = FriendScreenState.List
                     scope.launch { scaffoldState.bottomSheetState.expand() }
                 }
             )
@@ -489,46 +367,41 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     }
 }
 
-suspend fun searchLoadToNaverMap(context: Context, slat: Double, slng: Double, dlat: Double, dlng: Double) {
+// ---------------------------------------------------------------------------
+// Helper functions
+// ---------------------------------------------------------------------------
+
+suspend fun searchLoadToNaverMap(
+    context: Context,
+    slat: Double,
+    slng: Double,
+    dlat: Double,
+    dlng: Double
+) {
     val geocoder = Geocoder(context, Locale.KOREAN)
 
-    val startLocationAddress = withContext(Dispatchers.IO) {
-        try {
-            geocoder.getFromLocation(slat, slng, 1)
-        } catch (e: IOException) {
-            Log.e("Geocoder", "getFromLocation (start) failed: ${e.message}")
-            null
+    val startAddr = withContext(Dispatchers.IO) {
+        try { geocoder.getFromLocation(slat, slng, 1) } catch (e: IOException) {
+            Log.e("Geocoder", "start", e); null
+        }
+    }
+    val endAddr = withContext(Dispatchers.IO) {
+        try { geocoder.getFromLocation(dlat, dlng, 1) } catch (e: IOException) {
+            Log.e("Geocoder", "end", e); null
         }
     }
 
-    val endLocationAddress = withContext(Dispatchers.IO) {
-        try {
-            geocoder.getFromLocation(dlat, dlng, 1)
-        } catch (e: IOException) {
-            Log.e("Geocoder", "getFromLocation (end) failed: ${e.message}")
-            null
-        }
-    }
+    val sName = encodeAddress(startAddr?.getOrNull(0)?.getAddressLine(0)?.replace("대한민국 ", "") ?: "출발지")
+    val dName = encodeAddress(endAddr?.getOrNull(0)?.getAddressLine(0)?.replace("대한민국 ", "") ?: "도착지")
 
-    val encodedStartAddress = encodeAddress(startLocationAddress?.getOrNull(0)?.getAddressLine(0)?.replace("대한민국 ", "") ?: "출발지")
-    val encodedEndAddress = encodeAddress(endLocationAddress?.getOrNull(0)?.getAddressLine(0)?.replace("대한민국 ", "") ?: "도착지")
-
-    val url = "nmap://route/car?slat=$slat&slng=$slng&sname=$encodedStartAddress&dlat=$dlat&dlng=$dlng&dname=$encodedEndAddress"
-
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-        addCategory(Intent.CATEGORY_BROWSABLE)
-    }
+    val uri = Uri.parse("nmap://route/car?slat=$slat&slng=$slng&sname=$sName&dlat=$dlat&dlng=$dlng&dname=$dName")
+    val intent = Intent(Intent.ACTION_VIEW, uri).apply { addCategory(Intent.CATEGORY_BROWSABLE) }
 
     val installed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        context.packageManager.queryIntentActivities(
-            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
-            PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
-        )
+        context.packageManager.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
+            PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong()))
     } else {
-        context.packageManager.queryIntentActivities(
-            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
-            PackageManager.GET_META_DATA
-        )
+        context.packageManager.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), PackageManager.GET_META_DATA)
     }
 
     if (installed.isEmpty()) {
@@ -538,25 +411,22 @@ suspend fun searchLoadToNaverMap(context: Context, slat: Double, slng: Double, d
     }
 }
 
-private fun encodeAddress(address: String): String {
-    return try {
-        URLEncoder.encode(address, "UTF-8")
-    } catch (e: Exception) {
-        ""
-    }
-}
+private fun encodeAddress(addr: String): String = try {
+    URLEncoder.encode(addr, "UTF-8")
+} catch (e: Exception) { "" }
 
-// 프로필 이미지를 비트맵으로 변환하는 함수
 private suspend fun loadProfileBitmap(context: Context, url: String): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
     try {
         Glide.with(context)
             .asBitmap()
             .load(url)
-            .apply(RequestOptions()
-                .transform(CircleCrop())
-                .override(100, 100)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .skipMemoryCache(false))
+            .apply(
+                RequestOptions()
+                    .transform(CircleCrop())
+                    .override(100, 100)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .skipMemoryCache(false)
+            )
             .submit()
             .get()
     } catch (e: Exception) {

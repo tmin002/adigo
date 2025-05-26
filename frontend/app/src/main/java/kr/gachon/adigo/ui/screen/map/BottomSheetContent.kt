@@ -44,6 +44,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.ui.graphics.Color
 
 
 // ===============================
@@ -458,7 +459,7 @@ fun MyPageBottomSheetContent() {
                         modifier = Modifier
                             .size(12.dp)
                             .background(
-                                color = if (stompClient.stompConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                color = if (stompClient.stompConnected) Color.Green else Color.Red,
                                 shape = CircleShape
                             )
                     )
