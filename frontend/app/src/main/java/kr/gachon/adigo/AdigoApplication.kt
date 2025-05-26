@@ -1,12 +1,17 @@
 package kr.gachon.adigo
 
 import android.app.Application
+import android.content.Intent
+import android.os.Build
+import android.os.Build.VERSION_CODES.O
 import com.google.gson.Gson
 import io.realm.kotlin.Realm
 import io.realm.kotlin.RealmConfiguration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kr.adigo.adigo.database.entity.UserEntity
+import kr.gachon.adigo.AdigoApplication.AppContainer.tokenManager
+import kr.gachon.adigo.background.UserLocationProviderService
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.local.entity.UserLocationEntity
 import kr.gachon.adigo.data.local.repository.UserDatabaseRepository
@@ -107,11 +112,18 @@ class AdigoApplication : Application() {
 
         // ─ ViewModels ─
         container.friendListViewModel = FriendListViewModel(container.userDatabaseRepo)
+
+
+        if (tokenManager.hasValidToken()) {
+            Intent(this, UserLocationProviderService::class.java).also {
+                if (Build.VERSION.SDK_INT >= O) startForegroundService(it)
+                else startService(it)
+            }
+        }
     }
 
     override fun onTerminate() {
         super.onTerminate()
         AppContainer.realm.close()
-        AppContainer.stompClient.shutdown()
     }
 }

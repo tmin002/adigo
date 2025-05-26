@@ -293,12 +293,19 @@ fun EmailInputScreen(
                 )
             }
 
+
+
+
             Button(
                 onClick = {
                     authViewModel.sendLogin(
                         email, password,
                         onSuccess = {
-                            navController.navigate(Screens.Main.name)
+                            authViewModel.notifyLoginSuccess()
+                            navController.navigate(Screens.Main.name){
+                                popUpTo(Screens.OnBoard.name){ inclusive = true}
+                                launchSingleTop = true
+                            }
                         },
                         onError = { errorMsg ->
                             // 로그인 실패 시 에러 상태 활성화

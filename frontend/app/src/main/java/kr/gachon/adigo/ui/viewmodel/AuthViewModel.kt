@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kr.gachon.adigo.AdigoApplication
@@ -18,6 +20,10 @@ class AuthViewModel : ViewModel() {
     private val pushRemote  = AdigoApplication.AppContainer.pushRemote
     private val tokenMgr    = AdigoApplication.AppContainer.tokenManager
 
+    private val _isLoggedIn = MutableStateFlow(tokenMgr.hasValidToken())
+    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn
+
+
     /* ───────────── 로그인 ───────────── */
     fun sendLogin(
         email: String,
@@ -27,7 +33,8 @@ class AuthViewModel : ViewModel() {
     ) = viewModelScope.launch {
         authRemote.login(LoginRequest(email, password))
             .onSuccess { result ->
-                result?.data?.let { 
+                result?.data?.let {
+                    _isLoggedIn.value = true
                     tokenMgr.saveTokens(it)
                     tokenMgr.saveUserEmail(email)
                 }
@@ -106,6 +113,11 @@ class AuthViewModel : ViewModel() {
     /* ───────────── 로그아웃 ───────────── */
     fun logout(onComplete: () -> Unit = {}) = viewModelScope.launch {
         tokenMgr.clearTokens()
+        _isLoggedIn.value = false
         onComplete()
+    }
+
+    fun notifyLoginSuccess() {
+        _isLoggedIn.value = true       // ← 로그인 성공 시 호출
     }
 }

@@ -29,6 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kr.gachon.adigo.AdigoApplication
+import kr.gachon.adigo.data.remote.websocket.UserLocationWebSocketReceiver
 
 class UserLocationProviderService : Service() {
 
@@ -39,6 +40,7 @@ class UserLocationProviderService : Service() {
     private var friendLocationRequestJob: Job? = null
     private var locationUpdateJob: Job? = null
     private var lastLocation: Location? = null
+    private lateinit var locationReceiver: UserLocationWebSocketReceiver
 
     override fun onCreate() {
         super.onCreate()
@@ -53,6 +55,8 @@ class UserLocationProviderService : Service() {
         initLocationUpdates()
         startFriendLocationRequests()
         ensureWebSocketConnection()
+        locationReceiver = AdigoApplication.AppContainer.wsReceiver
+        locationReceiver.startListening()
     }
 
     private fun hasAllPermissions(): Boolean {
@@ -198,6 +202,7 @@ class UserLocationProviderService : Service() {
         friendLocationRequestJob?.cancel()
         locationUpdateJob?.cancel()
         serviceScope.cancel()
+        locationReceiver.stopListening()
         super.onDestroy()
     }
 
