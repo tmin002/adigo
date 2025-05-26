@@ -7,10 +7,12 @@ import com.google.gson.JsonSyntaxException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kr.gachon.adigo.data.local.repository.UserLocationRepository
@@ -25,44 +27,43 @@ class UserLocationWebSocketReceiver(
 ) {
 
     private val TAG = "UserLocationReceiver"
-    internal var receiverJob: Job? = null
+    internal var listenJob: Job? = null
 
     // Destination for receiving friend locations as per spec
     private val FRIENDS_LOCATION_RESPONSE_DESTINATION = "/user/queue/friendsLocationResponse"
 
     fun startListening() {
-        Log.d(TAG, "Starting UserLocationWebSocketReceiver listening...")
+        if (listenJob != null) return               // 이미 시작되어 있으면 무시
+        Log.d(TAG, "🔔 startListening")
 
-        // Subscribe to the destination via the STOMP client
-        stompClient.subscribe(FRIENDS_LOCATION_RESPONSE_DESTINATION)
-        Log.d(TAG, "Subscribed to $FRIENDS_LOCATION_RESPONSE_DESTINATION")
+        listenJob = coroutineScope.launch {
+            /** 1️⃣  STOMP 연결 상태 감시 → 연결되면 구독 */
+            launch {
+                while (isActive) {
+                    if (stompClient.stompConnected &&
+                        !stompClient.isSubscribed(FRIENDS_LOCATION_RESPONSE_DESTINATION))       // ← 확장 함수(아래)로 체크
+                    {
+                        stompClient.subscribe(FRIENDS_LOCATION_RESPONSE_DESTINATION)
+                        Log.i(TAG, "SUBSCRIBE sent for $FRIENDS_LOCATION_RESPONSE_DESTINATION")
+                    }
+                    delay(500)  // 가벼운 폴링
+                }
+            }
 
-        // Collect messages from the client's flow
-        receiverJob = stompClient.messageFlow
-            .onEach { (destination, body) ->
-                Log.d(TAG, "▲ inbound [$destination] $body")   // <-- 꼭 찍어보세요
-            }
-            .filter { (destination, _) ->
-                destination.endsWith("friendsLocationResponse")   // 가장 안전
-            }
-            .onEach { (_, body) ->
-                // onEach 안 자체가 이미 코루틴이므로 launch 필요 없음
-                handleFriendsLocationResponse(body)
-            }
-            .catch { Log.e(TAG, "Error in message flow", it) }
-            .launchIn(coroutineScope)
-
-        Log.d(TAG, "UserLocationWebSocketReceiver listening job launched.")
+            /** 2️⃣  메시지 스트림 수집 */
+            stompClient.messageFlow
+                .filter { (d, _) -> d == FRIENDS_LOCATION_RESPONSE_DESTINATION }
+                .onEach { (_, body) -> handleFriendsLocationResponse(body) }
+                .catch  { Log.e(TAG, "Flow error", it) }
+                .launchIn(this)
+        }
     }
 
     fun stopListening() {
-        Log.d(TAG, "Stopping UserLocationWebSocketReceiver listening...")
-        // Unsubscribe from the destination
+        Log.d(TAG, "🛑 stopListening")
         stompClient.unsubscribe(FRIENDS_LOCATION_RESPONSE_DESTINATION)
-        // Cancel the collecting job
-        receiverJob?.cancel()
-        receiverJob = null
-        Log.d(TAG, "UserLocationWebSocketReceiver listening stopped.")
+        listenJob?.cancel()
+        listenJob = null
     }
 
     private suspend fun handleFriendsLocationResponse(jsonBody: String) {
