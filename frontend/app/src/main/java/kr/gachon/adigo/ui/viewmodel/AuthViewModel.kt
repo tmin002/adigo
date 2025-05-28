@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.data.model.dto.LoginRequest
+import kr.gachon.adigo.data.model.dto.RefreshTokenRequest
 import kr.gachon.adigo.data.model.dto.SignUpRequest
 import kr.gachon.adigo.data.model.dto.newPushTokenDto
 
@@ -22,6 +23,42 @@ class AuthViewModel : ViewModel() {
 
     private val _isLoggedIn = MutableStateFlow(tokenMgr.hasValidToken())
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn
+
+    init {            // ← 앱 부팅·재시작 때 자동 호출
+        viewModelScope.launch { ensureLogin() }
+    }
+
+    /** 토큰 점검 → 필요 시 자동 리프레시 */
+    private suspend fun ensureLogin() {
+
+            if(tokenMgr.hasValidToken()){
+                _isLoggedIn.value = true
+            }else {
+
+                val rt = tokenMgr.getRefreshToken()
+                val at = tokenMgr.getJwtToken()          // nullable
+
+                if (rt != null && at!=null) {
+                    authRemote.refresh(RefreshTokenRequest(at, rt))
+                        .onSuccess { res ->
+                            res?.data?.let { tokenMgr.saveTokens(it) }
+                            _isLoggedIn.value = true
+                        }
+                        .onFailure {
+                            Log.e("AuthVM", "refresh 실패: ${it.message}")
+                            tokenMgr.clearTokens()
+                            _isLoggedIn.value = false
+                        }// 서버가 accessToken 필드를 optional 로 받도록 권장
+
+                } else {
+                    tokenMgr.clearTokens()
+                    _isLoggedIn.value = false
+                }
+
+            }
+
+
+    }
 
 
     /* ───────────── 로그인 ───────────── */

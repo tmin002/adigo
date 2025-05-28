@@ -13,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -60,7 +61,7 @@ import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var authVm: AuthViewModel
+    private val authVm: AuthViewModel by viewModels()
     private lateinit var uwbVm : UwbLocationViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,8 +78,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val container = AdigoApplication.AppContainer
-        authVm = AuthViewModel()
         uwbVm  = UwbLocationViewModel(uwbService(this))
 
         setContent {
