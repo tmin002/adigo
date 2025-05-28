@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Geocoder
-import android.location.Location
 import android.net.Uri
 import android.os.Build
 import android.os.Looper
@@ -68,10 +67,7 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     )
     val scope = rememberCoroutineScope()
 
-    // ---------- App-wide singletons ----------
-    val stompClient = remember { AdigoApplication.AppContainer.stompClient }
-    val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
-    val locationSender = remember { AdigoApplication.AppContainer.wsSender }
+
 
     val friendLocationViewModel = remember {
         FriendLocationViewModel(AdigoApplication.AppContainer.userLocationRepo)

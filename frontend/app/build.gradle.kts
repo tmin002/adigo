@@ -51,7 +51,11 @@ android {
 
 dependencies {
 
-    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    // ───────── Passkey (Credential Manager) ─────────
+    implementation(libs.androidx.credentials)
+
+
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))//
     // 지도 컴포즈 통합 라이브러리 (Google Maps Compose)
     implementation(libs.google.maps.compose)
 

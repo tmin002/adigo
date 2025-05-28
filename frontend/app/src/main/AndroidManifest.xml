@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.UWB_RANGING" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!--내 위치 뜨게 하는 권한-->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
@@ -45,8 +46,7 @@
             </intent-filter>
         </activity>
 
-        <!-- WebSocket 테스트 액티비티 등록 -->
-        <activity android:name="kr.gachon.adigo.ui.screen.WebSocketTestActivity" />
+
 
         <service
             android:name=".service.PushNotificationService"
@@ -59,10 +59,21 @@
 
 
 
+
+
         <service
             android:name=".background.UserLocationProviderService"
             android:foregroundServiceType="location"
             android:exported="false" />
+
+        <receiver
+            android:name=".receiver.BootCompletedReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

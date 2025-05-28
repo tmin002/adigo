@@ -70,226 +70,12 @@ fun DragHandle() {
 }
 
 @Composable
-fun FriendsBottomSheetContent(
-    friendScreenState: FriendScreenState,
-    onSelectFriend: (UserEntity) -> Unit,
-    onNavigateToFriend: (UserEntity) -> Unit,
-    onClickBack: () -> Unit,
-    friendlistviewModel: FriendListViewModel = AdigoApplication.AppContainer.friendListViewModel
-) {
-    val friends by friendlistviewModel.friends.collectAsState(emptyList())
-    val friendRequests by friendlistviewModel.friendRequests.collectAsState()
-    var showAddDialog by remember { mutableStateOf(false) }
-    val friendLocations by AdigoApplication.AppContainer.userLocationRepo.friends.collectAsState(emptyList())
-    val myPageViewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
-    val currentUser by myPageViewModel.currentUser.collectAsState()
-
-    LaunchedEffect(Unit) { 
-        Log.d("BottomSheetContent", "LaunchedEffect triggered")
-        friendlistviewModel.refreshFriends()
-        friendlistviewModel.refreshFriendRequests()
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(400.dp)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-            .padding(horizontal = 16.dp)
-    ) {
-        DragHandle()
-
-        when (friendScreenState) {
-            is FriendScreenState.List -> {
-                Header(onAddFriendClick = { showAddDialog = true })
-
-                // 친구 요청 목록
-                if (friendRequests.isNotEmpty()) {
-                    Text(
-                        text = "친구 요청",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                    LazyColumn {
-                        items(friendRequests) { request ->
-                            FriendRequestItem(
-                                request = request,
-                                onAccept = { friendlistviewModel.replyToFriendRequest(request.requesterEmail, true) },
-                                onReject = { friendlistviewModel.replyToFriendRequest(request.requesterEmail, false) }
-                            )
-                        }
-                    }
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-                }
-
-                // 친구 목록
-                Text(
-                    text = "친구 목록",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-                LazyColumn {
-                    items(friends.filter { it.id != currentUser?.id }, key = { it.id }) { user ->
-                        FriendListItem(
-                            user = user,
-                            onClick = { onSelectFriend(user) },
-                            onDelete = { friendlistviewModel.deleteFriend(user) }
-                        )
-                    }
-                }
-            }
-            is FriendScreenState.Profile -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    // 헤더
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "친구 프로필",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Text(
-                            text = "뒤로",
-                            modifier = Modifier.clickable { onClickBack() }
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // 프로필 정보
-                    val friend = friendScreenState.friend
-                    val friendLocation = friendLocations.firstOrNull { it.id == friend.id }
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // 프로필 이미지
-                        if (friend.profileImageURL.isNotEmpty()) {
-                            AsyncImage(
-                                model = friend.profileImageURL,
-                                contentDescription = "프로필 이미지",
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .clip(RoundedCornerShape(50.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .clip(RoundedCornerShape(50.dp))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = friend.name.first().uppercaseChar().toString(),
-                                    style = MaterialTheme.typography.headlineLarge
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // 이름
-                        Text(
-                            text = friend.name,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 이메일
-                        Text(
-                            text = friend.email,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
-                        
-                        // 길 찾기 버튼
-                        Button(
-                            onClick = { onNavigateToFriend(friend) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text(
-                                text = "길 찾기",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (showAddDialog) {
-        AddFriendDialog(
-            onAdd = { email ->
-                friendlistviewModel.addFriend(email)
-                showAddDialog = false
-            },
-            onDismiss = { showAddDialog = false }
-        )
-    }
-}
-
-@Composable
-private fun AddFriendDialog(
-    onAdd: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var email by remember { mutableStateOf("") }
-    val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("친구 추가") },
-        text = {
-            Column {
-                Text("추가할 친구의 이메일을 입력하세요.")
-                Spacer(Modifier.height(8.dp))
-                TextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    singleLine = true,
-                    placeholder = { Text("example@email.com") }
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = isValid,
-                onClick = { onAdd(email) }
-            ) { Text("추가") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("취소") }
-        }
-    )
-}
-
-
-@Composable
 fun MyPageBottomSheetContent() {
     // Get WebSocket components from Application
     val stompClient = remember { AdigoApplication.AppContainer.stompClient }
     val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
     val locationSender = remember { AdigoApplication.AppContainer.wsSender }
-    
+
     val viewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
     val currentUser by viewModel.currentUser.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -373,9 +159,9 @@ fun MyPageBottomSheetContent() {
                             )
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.width(16.dp))
-                    
+
                     // 닉네임과 수정 버튼을 포함하는 Column
                     Column {
                         Row(
@@ -447,7 +233,7 @@ fun MyPageBottomSheetContent() {
             ) {
                 Text("연결 상태", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // WebSocket Connection Status
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -464,9 +250,9 @@ fun MyPageBottomSheetContent() {
                             )
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Friend Location Subscription Status
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -539,6 +325,223 @@ fun SettingsBottomSheetContent(
     }
 }
 
+
+
+@Composable
+private fun AddFriendDialog(
+    onAdd: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("친구 추가") },
+        text = {
+            Column {
+                Text("추가할 친구의 이메일을 입력하세요.")
+                Spacer(Modifier.height(8.dp))
+                TextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    singleLine = true,
+                    placeholder = { Text("example@email.com") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = isValid,
+                onClick = { onAdd(email) }
+            ) { Text("추가") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("취소") }
+        }
+    )
+}
+
+
+
+
+
+@Composable
+fun FriendsBottomSheetContent(
+    friendScreenState: FriendScreenState,
+    onSelectFriend: (UserEntity) -> Unit,
+    onNavigateToFriend: (UserEntity) -> Unit,
+    onClickBack: () -> Unit,
+) {
+    val friendlistviewModel = FriendListViewModel()
+    val friends by friendlistviewModel.friends.collectAsState(emptyList())
+    val friendRequests by friendlistviewModel.friendRequests.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
+    val friendLocations by AdigoApplication.AppContainer.userLocationRepo.friends.collectAsState(emptyList())
+    val myPageViewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
+
+    LaunchedEffect(Unit) {
+        Log.d("BottomSheetContent", "LaunchedEffect triggered")
+        friendlistviewModel.refreshFriends()
+        friendlistviewModel.refreshFriendRequests()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(400.dp)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+            .padding(horizontal = 16.dp)
+    ) {
+        DragHandle()
+
+        when (friendScreenState) {
+            is FriendScreenState.List -> {
+                Header(onAddFriendClick = { showAddDialog = true })
+
+                // 친구 요청 목록
+                if (friendRequests.isNotEmpty()) {
+                    Text(
+                        text = "친구 요청",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    LazyColumn {
+                        items(friendRequests) { request ->
+                            FriendRequestItem(
+                                request = request,
+                                onAccept = { friendlistviewModel.replyToFriendRequest(request.requesterEmail, true) },
+                                onReject = { friendlistviewModel.replyToFriendRequest(request.requesterEmail, false) }
+                            )
+                        }
+                    }
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                }
+
+                // 친구 목록
+                Text(
+                    text = "친구 목록",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+                LazyColumn {
+                    items(friends) { user ->
+                        FriendListItem(
+                            user = user,
+                            onClick = { onSelectFriend(user) },
+                            onDelete = { friendlistviewModel.deleteFriend(user) }
+                        )
+                    }
+                }
+            }
+            is FriendScreenState.Profile -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // 헤더
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "친구 프로필",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            text = "뒤로",
+                            modifier = Modifier.clickable { onClickBack() }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 프로필 정보
+                    val friend = friendScreenState.friend
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // 프로필 이미지
+                        if (friend.profileImageURL.isNotEmpty()) {
+                            AsyncImage(
+                                model = friend.profileImageURL,
+                                contentDescription = "프로필 이미지",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(RoundedCornerShape(50.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = friend.name.first().uppercaseChar().toString(),
+                                    style = MaterialTheme.typography.headlineLarge
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // 이름
+                        Text(
+                            text = friend.name,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 이메일
+                        Text(
+                            text = friend.email,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // 길 찾기 버튼
+                        Button(
+                            onClick = { onNavigateToFriend(friend) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(
+                                text = "길 찾기",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        AddFriendDialog(
+            onAdd = { email ->
+                friendlistviewModel.addFriend(email)
+                showAddDialog = false
+            },
+            onDismiss = { showAddDialog = false }
+        )
+    }
+}
+
 @Composable
 private fun Header(onAddFriendClick: () -> Unit) {
     Row(
@@ -558,6 +561,7 @@ private fun Header(onAddFriendClick: () -> Unit) {
     }
     Spacer(modifier = Modifier.height(8.dp))
 }
+
 
 @Composable
 private fun FriendListItem(
@@ -618,6 +622,8 @@ private fun FriendListItem(
     }
 }
 
+
+
 @Composable
 private fun FriendRequestItem(
     request: FriendshipRequestLookupDto,
@@ -671,3 +677,7 @@ private fun FriendRequestItem(
         }
     }
 }
+
+
+
+

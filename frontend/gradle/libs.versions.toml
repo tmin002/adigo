@@ -2,6 +2,7 @@
 
 [versions]
 agp = "8.9.0"
+credentials = "1.5.0"
 kotlin = "1.9.23"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -36,6 +37,7 @@ firebaseMessaging = "24.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -53,6 +55,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundationLayoutAndroid" }
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3Android" }
 androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
+
 
 google-maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
 androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "composeMaterial" } # Material 1 (Compose)

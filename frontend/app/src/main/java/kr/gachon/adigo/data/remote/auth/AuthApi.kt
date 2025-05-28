@@ -39,4 +39,5 @@ interface AuthApi {
 
     @POST("auth/reissue")
     suspend fun refresh(@Body body: RefreshTokenRequest): Response<LoginResponse>
+
 }

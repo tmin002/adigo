@@ -50,13 +50,14 @@ class UserLocationProviderService : Service() {
             // 권한이 없어도 서비스는 계속 실행하되, 로그를 남깁니다.
         }
 
+        locationReceiver = AdigoApplication.AppContainer.wsReceiver
+
         Log.i("UserLocationProvider", "Foreground Service started")
         startForegroundService()
         initLocationUpdates()
         startFriendLocationRequests()
         ensureWebSocketConnection()
-        locationReceiver = AdigoApplication.AppContainer.wsReceiver
-        locationReceiver.startListening()
+        startFriendLocationListening()
     }
 
     private fun hasAllPermissions(): Boolean {
@@ -193,7 +194,12 @@ class UserLocationProviderService : Service() {
         }
     }
 
+    private fun startFriendLocationListening(){
+        locationReceiver.startListening()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForegroundService()
         return START_STICKY
     }
 

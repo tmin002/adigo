@@ -33,33 +33,19 @@ class PushNotificationService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         val title = remoteMessage.notification?.title ?: "알림"
         val body = remoteMessage.notification?.body ?: "내용 없음"
-        
-        // 친구 요청 알림인 경우 FriendListViewModel 업데이트
-            Log.d(TAG, "Friend request notification received in ${if (isAppInForeground()) "foreground" else "background"}")
-            
-            // 백그라운드에서 안전하게 실행
-            serviceScope.launch {
-                try {
-                    withContext(Dispatchers.IO) {
-                        AdigoApplication.AppContainer.friendListViewModel.onFriendRequestNotificationReceived()
-                    }
-                    Log.d(TAG, "Successfully refreshed friend requests in background")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to refresh friend requests in background", e)
-                    // 실패 시 재시도 로직을 추가할 수 있습니다
-                }
-            }
-
-        
         sendNotification(title, body)
+
+        serviceScope.launch {
+            try {
+                val container = AdigoApplication.AppContainer
+                container.userDatabaseRepo.updateFriendsFromServer()
+                Log.d(TAG, "Friend list refreshed from push")
+            } catch (e: Exception) {
+                Log.e(TAG, "Push-triggered refresh failed", e)
+            }
+        }
     }
 
-    /** 앱이 포그라운드에 있는지 확인 */
-    private fun isAppInForeground(): Boolean {
-        val appProcessInfo = android.app.ActivityManager.RunningAppProcessInfo()
-        android.app.ActivityManager.getMyMemoryState(appProcessInfo)
-        return appProcessInfo.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-    }
 
     /** 시스템 알림 표시 */
     private fun sendNotification(title: String, body: String) {

@@ -1,19 +1,18 @@
 package kr.gachon.adigo
 
 import VerificationCodeScreen
-import android.Manifest
+import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.runtime.getValue
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,26 +21,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+import androidx.credentials.GetCredentialRequest
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.runBlocking
 import kr.gachon.adigo.background.UserLocationProviderService
-import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.service.uwbService
 import kr.gachon.adigo.ui.components.PermissionGate
 import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
@@ -53,7 +54,6 @@ import kr.gachon.adigo.ui.screen.map.MapScreen
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
-import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
 import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 
 
@@ -198,6 +198,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun OnBoardScreen(navController: NavController, uwbVm: UwbLocationViewModel) {
+
+
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

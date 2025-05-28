@@ -1,5 +1,6 @@
 package kr.gachon.adigo.data.local.repository
 
+import android.util.Log
 import io.realm.kotlin.Realm
 import io.realm.kotlin.UpdatePolicy
 import io.realm.kotlin.ext.query
@@ -9,6 +10,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOn
 import kr.adigo.adigo.database.entity.UserEntity
+import kr.gachon.adigo.AdigoApplication
+import kr.gachon.adigo.data.local.transformer.UserTransformer
+import kr.gachon.adigo.data.model.dto.FriendListResponse
+import retrofit2.Response
+import kotlin.collections.filter
+import kotlin.collections.map
 
 class UserDatabaseRepository(private val realm: Realm) {
 
@@ -32,9 +39,9 @@ class UserDatabaseRepository(private val realm: Realm) {
 
     suspend fun upsert(user: UserEntity) = upsertAll(listOf(user))
 
-    suspend fun delete(userId: String) {
+    suspend fun delete(id: Long) {
         realm.write {
-            query<UserEntity>("id == $0", userId)
+            query<UserEntity>("id == $0", id)
                 .first()
                 .find()
                 ?.let { delete(it) }
@@ -44,5 +51,20 @@ class UserDatabaseRepository(private val realm: Realm) {
     /** Get user by ID */
     fun getUserById(id: Long): UserEntity? {
         return realm.query<UserEntity>("id == $0", id).first().find()
+    }
+
+    suspend fun updateFriendsFromServer() {
+        try {
+            val response: Response<FriendListResponse> = AdigoApplication.AppContainer.friendRemote.friendList()
+            if (response.isSuccessful) {
+                response.body()?.let { friendListResponse: FriendListResponse ->
+                    friendListResponse.data.forEach { friend ->
+                        upsert(UserTransformer.modelToEntity(friend))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("FriendListViewModel", "Failed to refresh friends", e)
+        }
     }
 }
