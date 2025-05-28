@@ -74,7 +74,6 @@ fun MyPageBottomSheetContent() {
     // Get WebSocket components from Application
     val stompClient = remember { AdigoApplication.AppContainer.stompClient }
     val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
-    val locationSender = remember { AdigoApplication.AppContainer.wsSender }
 
     val viewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
     val currentUser by viewModel.currentUser.collectAsState()
@@ -328,7 +327,7 @@ fun SettingsBottomSheetContent(
 
 
 @Composable
-private fun AddFriendDialog(
+fun AddFriendDialog(
     onAdd: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -373,9 +372,9 @@ fun FriendsBottomSheetContent(
     onNavigateToFriend: (UserEntity) -> Unit,
     onClickBack: () -> Unit,
 ) {
-    val friendlistviewModel = FriendListViewModel()
+    val friendlistviewModel = remember { FriendListViewModel() }
     val friends by friendlistviewModel.friends.collectAsState(emptyList())
-    val friendRequests by friendlistviewModel.friendRequests.collectAsState()
+    val friendRequests by friendlistviewModel.friendRequests.collectAsState(emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
     val friendLocations by AdigoApplication.AppContainer.userLocationRepo.friends.collectAsState(emptyList())
     val myPageViewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
@@ -543,7 +542,7 @@ fun FriendsBottomSheetContent(
 }
 
 @Composable
-private fun Header(onAddFriendClick: () -> Unit) {
+fun Header(onAddFriendClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -564,7 +563,7 @@ private fun Header(onAddFriendClick: () -> Unit) {
 
 
 @Composable
-private fun FriendListItem(
+fun FriendListItem(
     user: UserEntity,
     onClick: () -> Unit,
     onDelete: () -> Unit
@@ -625,7 +624,7 @@ private fun FriendListItem(
 
 
 @Composable
-private fun FriendRequestItem(
+fun FriendRequestItem(
     request: FriendshipRequestLookupDto,
     onAccept: () -> Unit,
     onReject: () -> Unit

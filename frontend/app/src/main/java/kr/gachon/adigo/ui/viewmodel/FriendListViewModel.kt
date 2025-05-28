@@ -76,9 +76,10 @@ class FriendListViewModel(
     }
 
     fun deleteFriend(friend: UserEntity) {
+
         viewModelScope.launch {
             try {
-                repo.delete(friend.id)
+
                 val response = AdigoApplication.AppContainer.friendRemote.deleteFriend(friend.email)
                 if (response.isSuccessful) {
                     refreshFriends()
@@ -86,6 +87,8 @@ class FriendListViewModel(
             } catch (e: Exception) {
                 Log.e("FriendListViewModel", "Failed to delete friend", e)
             }
+
+            repo.delete(friend.id)
         }
     }
 

@@ -43,7 +43,6 @@ class MyPageViewModel(
                 if (response.isSuccessful) {
                     response.body()?.data?.let { user ->
                         val userEntity = UserTransformer.modelToEntity(user)
-                        userDatabaseRepo.upsert(userEntity)
                         _currentUser.value = userEntity
                     }
                 } else {
