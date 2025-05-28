@@ -69,7 +69,6 @@ class MyPageViewModel(
                             authority = User.Authority.valueOf(currentUser?.authority ?: user.authority.name)
                         )
                         val userEntity = UserTransformer.modelToEntity(updatedUser)
-                        userDatabaseRepo.upsert(userEntity)
                         _currentUser.value = userEntity
                     }
                     loadCurrentUser()
@@ -98,7 +97,6 @@ class MyPageViewModel(
                             authority = User.Authority.valueOf(currentUser?.authority ?: user.authority.name)
                         )
                         val userEntity = UserTransformer.modelToEntity(updatedUser)
-                        userDatabaseRepo.upsert(userEntity)
                         _currentUser.value = userEntity
                     }
                     loadCurrentUser()
