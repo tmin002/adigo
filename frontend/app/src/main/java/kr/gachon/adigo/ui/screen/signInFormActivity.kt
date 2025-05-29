@@ -236,12 +236,12 @@ fun EmailInputScreen(
                 errorContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = if (emailValid && !emailDuplicate) Color(0xFF3F51B5) else Color.Red,
-                unfocusedIndicatorColor = if (email.isEmpty()) Color.Gray else if (emailValid && !emailDuplicate) Color(
-                    0xFF3F51B5
-                ) else Color.Red,
+                focusedIndicatorColor = if (emailValid) Color(0xFF3F51B5) else Color.Red,
+                unfocusedIndicatorColor = if (email.isEmpty()) Color.Gray else if (emailValid) Color(0xFF3F51B5) else Color.Red,
                 disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Red
+                errorIndicatorColor = Color.Red,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
             )
         )
 
@@ -279,7 +279,9 @@ fun EmailInputScreen(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color(0xFF3F51B5),
-                    unfocusedIndicatorColor = Color.Gray
+                    unfocusedIndicatorColor = Color.Gray,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
                 )
             )
             

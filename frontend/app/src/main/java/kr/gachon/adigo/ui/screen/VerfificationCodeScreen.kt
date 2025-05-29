@@ -122,7 +122,7 @@ private fun VerificationCodeDigitInput( // Renamed composable
             textStyle = TextStyle(
                 fontSize = 20.sp,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground // Use appropriate theme color
+                color = Color.Black // 다크 모드에서도 검정색으로 표시
             ),
             decorationBox = { innerTextField ->
                 Column(
