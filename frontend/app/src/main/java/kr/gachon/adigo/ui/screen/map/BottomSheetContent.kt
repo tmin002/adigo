@@ -107,6 +107,7 @@ fun MyPageBottomSheetContent() {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
+            .height(400.dp)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
             .padding(horizontal = 20.dp)
     ) {
