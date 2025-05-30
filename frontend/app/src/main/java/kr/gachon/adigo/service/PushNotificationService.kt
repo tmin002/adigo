@@ -31,15 +31,31 @@ class PushNotificationService : FirebaseMessagingService() {
 
     /** FCM 알림 수신 */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        val shouldNotify = remoteMessage.notification != null
+        val container = AdigoApplication.AppContainer
+        val data = remoteMessage.data
+        val type = data["type"] // ← 데이터 메시지일 경우 pushType
+
+        // 1. 알림(시각적) 푸시 처리
         val title = remoteMessage.notification?.title ?: "알림"
         val body = remoteMessage.notification?.body ?: "내용 없음"
-        sendNotification(title, body)
 
+        // 2. serviceScope 로 친구 상태 갱신
         serviceScope.launch {
             try {
-                val container = AdigoApplication.AppContainer
-                container.userDatabaseRepo.updateFriendsFromServer()
-                Log.d(TAG, "Friend list refreshed from push")
+                if (type == "FRIEND_ONLINE_STATUS_CHANGED" || type == "PROFILE_CHANGED") {
+                    Log.d(TAG, "Data push received with type: $type → refreshing friend list")
+                    container.userDatabaseRepo.updateFriendsFromServer()
+                } else if (title.contains("친구") || body.contains("친구")) {
+                    Log.d(TAG, "Notification push about friend → refreshing friend list")
+                    container.userDatabaseRepo.updateFriendsFromServer()
+
+                }
+
+                if (shouldNotify) {
+                    sendNotification(title, body)
+                }
+
             } catch (e: Exception) {
                 Log.e(TAG, "Push-triggered refresh failed", e)
             }
