@@ -46,6 +46,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.ui.graphics.Color
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 
 // ===============================
@@ -105,6 +106,18 @@ fun MyPageBottomSheetContent() {
 
     var showEditDialog by remember { mutableStateOf(false) }
     var newNickname by remember { mutableStateOf("") }
+    var showResetPasswordDialog by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+
+    // 비밀번호 변경 성공 여부를 감시
+    LaunchedEffect(viewModel.isPasswordResetSuccess.collectAsState().value) {
+        if (viewModel.isPasswordResetSuccess.value) {
+            showSuccessDialog = true
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -225,6 +238,31 @@ fun MyPageBottomSheetContent() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // 계정 정보 그룹
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(16.dp)
+                ) {
+                    Text("계정 정보", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("이메일: ${currentUser?.email ?: ""}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { showResetPasswordDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("비밀번호 재설정")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // WebSocket Status Group
                 Column(
                     modifier = Modifier
@@ -292,6 +330,104 @@ fun MyPageBottomSheetContent() {
                 }
             }
         }
+    }
+
+    if (showResetPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showResetPasswordDialog = false
+                newPassword = ""
+                confirmPassword = ""
+                passwordError = null
+            },
+            title = { Text("비밀번호 재설정") },
+            text = {
+                Column {
+                    TextField(
+                        value = newPassword,
+                        onValueChange = {
+                            newPassword = it
+                            passwordError = null
+                        },
+                        label = { Text("새 비밀번호") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = confirmPassword,
+                        onValueChange = {
+                            confirmPassword = it
+                            passwordError = null
+                        },
+                        label = { Text("비밀번호 확인") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (passwordError != null) {
+                        Text(
+                            text = passwordError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newPassword.length < 6) {
+                            passwordError = "비밀번호는 6자 이상이어야 합니다"
+                            return@TextButton
+                        }
+                        if (newPassword != confirmPassword) {
+                            passwordError = "비밀번호가 일치하지 않습니다"
+                            return@TextButton
+                        }
+                        viewModel.resetPassword(currentUser?.email ?: "", newPassword, confirmPassword)
+                        showResetPasswordDialog = false
+                    }
+                ) {
+                    Text("확인")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showResetPasswordDialog = false
+                        newPassword = ""
+                        confirmPassword = ""
+                        passwordError = null
+                    }
+                ) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showSuccessDialog = false
+                viewModel.clearError()
+            },
+            title = { Text("알림") },
+            text = { Text("비밀번호가 성공적으로 변경되었습니다.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSuccessDialog = false
+                        viewModel.clearError()
+                    }
+                ) {
+                    Text("확인")
+                }
+            }
+        )
     }
 }
 
@@ -596,6 +732,7 @@ fun FriendListItem(
                 contentScale = ContentScale.Crop
             )
         } else {
+            // 프로필 이미지가 없는 경우 이니셜 표시
             Box(
                 modifier = Modifier
                     .size(40.dp)

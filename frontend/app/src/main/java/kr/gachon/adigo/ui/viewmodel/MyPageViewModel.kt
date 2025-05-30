@@ -12,8 +12,6 @@ import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.data.local.repository.UserDatabaseRepository
 import kr.gachon.adigo.data.local.transformer.UserTransformer
-import kr.gachon.adigo.data.model.dto.FriendListResponse  // 서버 DTO
-import kr.gachon.adigo.data.model.dto.ProfileResponse
 import kr.gachon.adigo.data.model.global.User     // 도메인 모델
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -31,6 +29,9 @@ class MyPageViewModel(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _isPasswordResetSuccess = MutableStateFlow(false)
+    val isPasswordResetSuccess: StateFlow<Boolean> = _isPasswordResetSuccess.asStateFlow()
 
     init {
         loadCurrentUser()
@@ -111,8 +112,30 @@ class MyPageViewModel(
         }
     }
 
+    fun resetPassword(email: String, password: String, passwordConfirm: String) {
+        viewModelScope.launch {
+            try {
+                val result = AdigoApplication.AppContainer.authRemote.resetPassword(email, password, passwordConfirm)
+                result.fold(
+                    onSuccess = {
+                        _isPasswordResetSuccess.value = true
+                        _error.value = null
+                    },
+                    onFailure = { e ->
+                        _isPasswordResetSuccess.value = false
+                        _error.value = "비밀번호 재설정에 실패했습니다: ${e.message}"
+                    }
+                )
+            } catch (e: Exception) {
+                _isPasswordResetSuccess.value = false
+                _error.value = "비밀번호 재설정 중 오류가 발생했습니다: ${e.message}"
+            }
+        }
+    }
+
     fun clearError() {
         _error.value = null
+        _isPasswordResetSuccess.value = false
     }
 
     private fun createMultipartBodyPart(uri: Uri, context: Context): MultipartBody.Part {
