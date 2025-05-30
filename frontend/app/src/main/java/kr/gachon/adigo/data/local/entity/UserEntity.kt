@@ -19,4 +19,7 @@ class UserEntity : RealmObject {
 
     /**  ROLE_ADMIN or ROLE_USER  */
     var authority: String = "ROLE_USER"
+
+    var isOnline: Boolean = false
+    var lastSeenString: String = ""
 }

@@ -6,8 +6,6 @@ data class SignUpResponse(
     val data: Response
 ) {
     data class Response(
-        val email: String,
-        val nickname: String,
-        val name: String
+        val isSuccess: Boolean,
     )
 }
