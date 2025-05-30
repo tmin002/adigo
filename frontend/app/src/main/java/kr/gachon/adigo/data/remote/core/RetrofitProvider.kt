@@ -1,10 +1,14 @@
 package kr.gachon.adigo.data.remote.core
 
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializer
 import kr.gachon.adigo.data.local.TokenManager
 import kr.gachon.adigo.data.remote.auth.AuthApiSync        // 동기용 인터페이스
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 object RetrofitProvider {
@@ -27,11 +31,18 @@ object RetrofitProvider {
             .writeTimeout(30, TimeUnit.SECONDS)
             .connectTimeout(30, TimeUnit.SECONDS)
 
+        /** ⭐️ 커스텀 Gson 설정 */
+        val gson: Gson = GsonBuilder()
+            .registerTypeAdapter(LocalDateTime::class.java, JsonDeserializer { json, _, _ ->
+                LocalDateTime.parse(json.asString)
+            })
+            .create()
+
         /** 1) 동기 호출용 AuthApiSync (임시 Retrofit, 인터셉터 없음) */
         val authApiSync = Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(baseBuilder.build())                   // 순수 client
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(AuthApiSync::class.java)
 
@@ -45,7 +56,7 @@ object RetrofitProvider {
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(finalClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 }

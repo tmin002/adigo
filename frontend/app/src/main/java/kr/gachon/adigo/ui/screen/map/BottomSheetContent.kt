@@ -44,6 +44,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.ui.graphics.Color
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 
 // ===============================
@@ -87,19 +89,19 @@ fun MyPageBottomSheetContent() {
         uri?.let { viewModel.updateProfileImage(it, context) }
     }
 
-    // 에러 다이얼로그
-    error?.let { errorMessage ->
-        AlertDialog(
-            onDismissRequest = { viewModel.clearError() },
-            title = { Text("오류") },
-            text = { Text(errorMessage) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.clearError() }) {
-                    Text("확인")
-                }
-            }
-        )
-    }
+//    // 에러 다이얼로그
+//    error?.let { errorMessage ->
+//        AlertDialog(
+//            onDismissRequest = { viewModel.clearError() },
+//            title = { Text("오류") },
+//            text = { Text(errorMessage) },
+//            confirmButton = {
+//                TextButton(onClick = { viewModel.clearError() }) {
+//                    Text("확인")
+//                }
+//            }
+//        )
+//    }
 
     var showEditDialog by remember { mutableStateOf(false) }
     var newNickname by remember { mutableStateOf("") }
@@ -598,7 +600,6 @@ fun FriendListItem(
                 contentScale = ContentScale.Crop
             )
         } else {
-            // 프로필 이미지가 없는 경우 이니셜 표시
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -612,12 +613,20 @@ fun FriendListItem(
 
         Spacer(Modifier.width(12.dp))
 
-        // 이름
-        Text(
-            text = user.name,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            // 이름
+            Text(
+                text = user.name,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            // 접속 상태 텍스트
+            Text(
+                text = if (user.isOnline) "🟢 온라인" else "⚪ 마지막 접속: ${formatLastSeen(user.lastSeenString)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (user.isOnline) Color(0xFF4CAF50) else Color.Gray
+            )
+        }
 
         // 삭제 아이콘
         IconButton(
@@ -686,6 +695,16 @@ fun FriendRequestItem(
                 Text("거절")
             }
         }
+    }
+}
+
+fun formatLastSeen(raw: String?): String {
+    return try {
+        if (raw.isNullOrBlank()) return "알 수 없음"
+        val parsed = LocalDateTime.parse(raw)
+        parsed.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+    } catch (e: Exception) {
+        "알 수 없음"
     }
 }
 
