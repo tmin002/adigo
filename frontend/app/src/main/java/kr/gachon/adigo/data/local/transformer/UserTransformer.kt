@@ -4,6 +4,7 @@ import kr.adigo.adigo.database.entity.ChatBubbleEntity
 import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.data.model.global.ChatBubble
 import kr.gachon.adigo.data.model.global.User
+import java.time.LocalDateTime
 
 
 /**
@@ -25,6 +26,8 @@ object UserTransformer : BasedTransformer<User, UserEntity> {
             name = model.nickname
             profileImageURL = model.profileImage ?: ""
             authority = model.authority.name
+            isOnline = model.isOnline
+            lastSeenString = model.lastSeen?.toString() ?: ""
         }
 
     /** Realm Entity → Model */
@@ -34,6 +37,10 @@ object UserTransformer : BasedTransformer<User, UserEntity> {
             email       = entity.email,
             nickname    = entity.name,
             profileImage= entity.profileImageURL.takeIf { it.isNotBlank() },
-            authority   = User.Authority.valueOf(entity.authority)
+            authority   = User.Authority.valueOf(entity.authority),
+            isOnline = entity.isOnline,
+            lastSeen = entity.lastSeenString.takeIf { it.isNotBlank()}?.let{
+                LocalDateTime.parse(it)
+            }
         )
 }
