@@ -32,3 +32,8 @@ local.properties   # frontend 내 개인 환경 설정 파일 무시
 captures
 .externalNativeBuild
 .cxx
+
+# ------------------------
+#  Build Reports
+# ------------------------
+frontend/build/reports/problems/problems-report.html
