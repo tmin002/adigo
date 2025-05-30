@@ -59,8 +59,6 @@
 
 
 
-
-
         <service
             android:name=".background.UserLocationProviderService"
             android:foregroundServiceType="location"
