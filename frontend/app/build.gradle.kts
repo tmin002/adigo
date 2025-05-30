@@ -6,7 +6,11 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-
+// 버전 관리 변수
+val majorVersion = 1
+val minorVersion = 1
+val patchVersion = 1
+val buildNumber = 3
 
 android {
     namespace = "kr.gachon.adigo"
@@ -18,8 +22,8 @@ android {
         applicationId = "kr.gachon.adigo"
         minSdk = 34
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = buildNumber
+        versionName = "$majorVersion.$minorVersion.$patchVersion"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

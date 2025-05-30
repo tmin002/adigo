@@ -34,6 +34,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -70,6 +73,7 @@ fun getPhoneNumber(context: Context): String {
         // 두 권한 중 하나라도 있으면 전화번호 가져오기 시도
         if (hasPhoneStatePermission || hasPhoneNumbersPermission) {
             try {
+                @Suppress("DEPRECATION")
                 val phoneNumber = telephonyManager.line1Number ?: ""
                 Log.d("PhoneNumber", "Raw phone number: $phoneNumber")
                 if (phoneNumber.isNotEmpty()) {
@@ -117,16 +121,23 @@ fun formatPhoneNumber(phoneNumber: String): String {
 
 // 진동 효과를 실행하는 함수
 fun vibratePhone(context: Context) {
-    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    
-    // API 레벨 26 이상에서는 VibrationEffect 사용
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-        // 150ms 동안 중간 강도로 진동
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        // Android 12 이상에서는 VibratorManager 사용
+        val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+        val vibrator = vibratorManager.defaultVibrator
         vibrator.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
     } else {
-        // 이전 버전에서는 deprecated API 사용
+        // Android 12 미만에서는 기존 Vibrator 사용
         @Suppress("DEPRECATION")
-        vibrator.vibrate(150)
+        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            // Android 8.0 이상에서는 VibrationEffect 사용
+            vibrator.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            // Android 8.0 미만에서는 기존 방식 사용
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(150)
+        }
     }
 }
 
@@ -231,17 +242,21 @@ fun EmailInputScreen(
             label = { Text("이메일") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                autoCorrectEnabled = false
+            ),
             colors = TextFieldDefaults.colors(
                 disabledContainerColor = Color.Transparent,
                 errorContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = if (emailValid && !emailDuplicate) Color(0xFF3F51B5) else Color.Red,
-                unfocusedIndicatorColor = if (email.isEmpty()) Color.Gray else if (emailValid && !emailDuplicate) Color(
-                    0xFF3F51B5
-                ) else Color.Red,
+                focusedIndicatorColor = if (emailValid) Color(0xFF3F51B5) else Color.Red,
+                unfocusedIndicatorColor = if (email.isEmpty()) Color.Gray else if (emailValid) Color(0xFF3F51B5) else Color.Red,
                 disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Red
+                errorIndicatorColor = Color.Red,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
             )
         )
 
@@ -279,7 +294,17 @@ fun EmailInputScreen(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color(0xFF3F51B5),
-                    unfocusedIndicatorColor = Color.Gray
+                    unfocusedIndicatorColor = Color.Gray,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
+                ),
+                //비밀번호 자동완성 없애기
+                keyboardOptions = KeyboardOptions(
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { /* 키보드 완료 버튼 동작 */ }
                 )
             )
             

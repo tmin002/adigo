@@ -39,7 +39,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -108,8 +107,9 @@ fun MyPageBottomSheetContent() {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
+            .height(400.dp)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp)
     ) {
         item {
             DragHandle()
@@ -295,6 +295,11 @@ fun MyPageBottomSheetContent() {
 fun SettingsBottomSheetContent(
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
+    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+    val versionName = packageInfo.versionName
+    val versionCode = packageInfo.longVersionCode
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -311,6 +316,13 @@ fun SettingsBottomSheetContent(
             Text(text = "설정", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "여기에 앱 설정 관련 정보를 표시합니다.")
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "앱 버전: $versionName (빌드 $versionCode)",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "로그아웃",
                 style = MaterialTheme.typography.labelLarge,
@@ -318,7 +330,7 @@ fun SettingsBottomSheetContent(
                     .clip(RoundedCornerShape(4.dp))
                     .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
                     .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .clickable {  onLogout()  }  // ← 여기서 호출
+                    .clickable { onLogout() }
             )
         }
     }
@@ -414,7 +426,7 @@ fun FriendsBottomSheetContent(
                             )
                         }
                     }
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
 
                 // 친구 목록
