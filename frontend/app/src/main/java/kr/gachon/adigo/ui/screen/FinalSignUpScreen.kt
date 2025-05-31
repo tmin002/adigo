@@ -3,6 +3,8 @@ package kr.gachon.adigo.ui.screen // 패키지 경로는 실제 프로젝트에 
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -12,7 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -31,10 +36,20 @@ fun FinalSignUpScreen(
 ) {
     var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by rememberSaveable { mutableStateOf(false) } // 비밀번호 보이기/숨기기 상태
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var confirmPasswordVisible by rememberSaveable { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+
+    // 비밀번호 일치 여부 확인
+    val isPasswordMatching by remember(password, confirmPassword) {
+        derivedStateOf {
+            password == confirmPassword
+        }
+    }
 
     // 가입 처리 함수
     val performSignUp: () -> Unit = { // 람다 시작
@@ -116,7 +131,7 @@ fun FinalSignUpScreen(
             // 비밀번호 입력 필드
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { newValue -> password = newValue },
                 label = { Text("비밀번호") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -130,8 +145,60 @@ fun FinalSignUpScreen(
                         Icon(imageVector = image, description)
                     }
                 },
-                isError = errorMessage != null // 에러 시 시각적 피드백 (선택 사항)
+                isError = errorMessage != null,// 에러 시 시각적 피드백 (선택 사항)
+                //비밀번호 자동완성 없애기
+                keyboardOptions = KeyboardOptions(
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus() // 키보드 완료 버튼 누르면 포커스 해제
+                    }
+                )
             )
+
+            // 비밀번호 확인 입력 필드
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { newValue -> confirmPassword = newValue },
+                label = { Text("비밀번호 확인") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    val image = if (confirmPasswordVisible)
+                        Icons.Filled.Lock
+                    else Icons.Filled.Lock
+                    val description = if (confirmPasswordVisible) "비밀번호 숨기기" else "비밀번호 보기"
+                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                        Icon(imageVector = image, description)
+                    }
+                },
+                isError = !isPasswordMatching && confirmPassword.isNotEmpty(),
+                //비밀번호 자동완성 없애기
+                keyboardOptions = KeyboardOptions(
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus() // 키보드 완료 버튼 누르면 포커스 해제
+                    }
+                )
+            )
+
+            // 비밀번호 불일치 에러 메시지
+            if (!isPasswordMatching && confirmPassword.isNotEmpty()) {
+                Text(
+                    text = "비밀번호가 일치하지 않습니다.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
             // 에러 메시지 표시
             if (errorMessage != null) {
@@ -148,7 +215,7 @@ fun FinalSignUpScreen(
             // 가입하기 버튼
             Button(
                 onClick = performSignUp, // 내부 함수 호출
-                enabled = !isLoading, // 로딩 중 아닐 때만 활성화
+                enabled = !isLoading && isPasswordMatching && password.isNotEmpty() && confirmPassword.isNotEmpty(), // 비밀번호가 일치하고 둘 다 입력되었을 때만 활성화
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (isLoading) {
