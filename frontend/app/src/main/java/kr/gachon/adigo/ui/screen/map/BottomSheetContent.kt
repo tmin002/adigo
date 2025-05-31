@@ -47,6 +47,9 @@ import androidx.compose.ui.graphics.Color
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
 
 
 // ===============================
@@ -479,6 +482,7 @@ fun AddFriendDialog(
     onDismiss: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
+    var isEmailError by remember { mutableStateOf(false) }
     val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 
     AlertDialog(
@@ -490,9 +494,25 @@ fun AddFriendDialog(
                 Spacer(Modifier.height(8.dp))
                 TextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = { 
+                        email = it
+                        isEmailError = it.isNotEmpty() && !android.util.Patterns.EMAIL_ADDRESS.matcher(it).matches()
+                    },
                     singleLine = true,
-                    placeholder = { Text("example@email.com") }
+                    placeholder = { Text("example@email.com") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Done
+                    ),
+                    isError = isEmailError,
+                    supportingText = {
+                        if (isEmailError) {
+                            Text(
+                                text = "올바른 이메일 형식이 아닙니다",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 )
             }
         },
