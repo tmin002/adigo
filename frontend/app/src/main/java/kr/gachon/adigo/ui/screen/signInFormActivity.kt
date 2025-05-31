@@ -416,7 +416,9 @@ fun EmailInputScreen(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = if (isPhoneNumberValid) Color(0xFF3F51B5) else Color.Gray,
-                    unfocusedIndicatorColor = if (isPhoneNumberValid) Color(0xFF3F51B5) else Color.Gray
+                    unfocusedIndicatorColor = if (isPhoneNumberValid) Color(0xFF3F51B5) else Color.Gray,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
                 )
             )
 
