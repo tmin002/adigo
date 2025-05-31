@@ -8,9 +8,9 @@ plugins {
 
 // 버전 관리 변수
 val majorVersion = 1
-val minorVersion = 2
+val minorVersion = 3
 val patchVersion = 2
-val buildNumber = 3
+val buildNumber = 5
 
 android {
     namespace = "kr.gachon.adigo"
@@ -20,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId = "kr.gachon.adigo"
-        minSdk = 34
+        minSdk = 33
         targetSdk = 35
         versionCode = buildNumber
         versionName = "$majorVersion.$minorVersion.$patchVersion"

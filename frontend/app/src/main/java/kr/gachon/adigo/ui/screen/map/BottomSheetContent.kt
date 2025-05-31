@@ -46,6 +46,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.ui.graphics.Color
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 
 // ===============================
@@ -105,191 +106,328 @@ fun MyPageBottomSheetContent() {
 
     var showEditDialog by remember { mutableStateOf(false) }
     var newNickname by remember { mutableStateOf("") }
+    var showResetPasswordDialog by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf<String?>(null) }
 
-    LazyColumn(
+    // 비밀번호 변경 성공 여부를 감시
+    LaunchedEffect(viewModel.isPasswordResetSuccess.collectAsState().value) {
+        if (viewModel.isPasswordResetSuccess.value) {
+            showSuccessDialog = true
+        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .height(400.dp)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
             .padding(horizontal = 20.dp)
     ) {
-        item {
-            DragHandle()
-            Spacer(modifier = Modifier.height(8.dp))
+        DragHandle()
+        Spacer(modifier = Modifier.height(8.dp))
 
-            // 프로필 섹션
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // 프로필 이미지와 닉네임을 포함하는 Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+        LazyColumn {
+            item {
+                // 프로필 섹션
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // 프로필 이미지
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(RoundedCornerShape(60.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                            .clickable(enabled = !isLoading) { launcher.launch("image/*") },
-                        contentAlignment = Alignment.Center
+                    // 프로필 이미지와 닉네임을 포함하는 Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(48.dp),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else if (currentUser?.profileImageURL?.isNotEmpty() == true) {
-                            AsyncImage(
-                                model = currentUser?.profileImageURL,
-                                contentDescription = "프로필 이미지",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = currentUser?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                                style = MaterialTheme.typography.headlineLarge
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    // 닉네임과 수정 버튼을 포함하는 Column
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                        // 프로필 이미지
+                        Box(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(60.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                .clickable(enabled = !isLoading) { launcher.launch("image/*") },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = currentUser?.name ?: "",
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                            IconButton(
-                                onClick = { showEditDialog = true },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "닉네임 수정",
-                                    tint = MaterialTheme.colorScheme.primary
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(48.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            } else if (currentUser?.profileImageURL?.isNotEmpty() == true) {
+                                AsyncImage(
+                                    model = currentUser?.profileImageURL,
+                                    contentDescription = "프로필 이미지",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    text = currentUser?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                                    style = MaterialTheme.typography.headlineLarge
                                 )
                             }
                         }
-                    }
-                }
-            }
 
-            // 닉네임 수정 다이얼로그
-            if (showEditDialog) {
-                AlertDialog(
-                    onDismissRequest = { showEditDialog = false },
-                    title = { Text("닉네임 수정") },
-                    text = {
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // 닉네임과 수정 버튼을 포함하는 Column
                         Column {
-                            TextField(
-                                value = newNickname,
-                                onValueChange = { newNickname = it },
-                                singleLine = true,
-                                placeholder = { Text("새로운 닉네임을 입력하세요") }
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                if (newNickname.isNotBlank()) {
-                                    viewModel.updateNickname(newNickname)
-                                    showEditDialog = false
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = currentUser?.name ?: "",
+                                    style = MaterialTheme.typography.headlineSmall
+                                )
+                                IconButton(
+                                    onClick = { showEditDialog = true },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "닉네임 수정",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
-                        ) {
-                            Text("저장")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showEditDialog = false }) {
-                            Text("취소")
                         }
                     }
-                )
-            }
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // WebSocket Status Group
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(16.dp)
-            ) {
-                Text("연결 상태", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // WebSocket Connection Status
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("서버 연결", style = MaterialTheme.typography.bodyLarge)
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(
-                                color = if (stompClient.stompConnected) Color.Green else Color.Red,
-                                shape = CircleShape
-                            )
+                // 닉네임 수정 다이얼로그
+                if (showEditDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showEditDialog = false },
+                        title = { Text("닉네임 수정") },
+                        text = {
+                            Column {
+                                TextField(
+                                    value = newNickname,
+                                    onValueChange = { newNickname = it },
+                                    singleLine = true,
+                                    placeholder = { Text("새로운 닉네임을 입력하세요") }
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    if (newNickname.isNotBlank()) {
+                                        viewModel.updateNickname(newNickname)
+                                        showEditDialog = false
+                                    }
+                                }
+                            ) {
+                                Text("저장")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showEditDialog = false }) {
+                                Text("취소")
+                            }
+                        }
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Friend Location Subscription Status
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // 계정 정보 그룹
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(16.dp)
                 ) {
-                    Text("친구 위치 구독", style = MaterialTheme.typography.bodyLarge)
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(
-
-                                color = if (stompClient.stompConnected && locationReceiver.listenJob?.isActive == true) Color.Green else Color.Red,
-                                shape = CircleShape
-                            )
-                    )
+                    Text("계정 정보", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("이메일: ${currentUser?.email ?: ""}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { showResetPasswordDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("비밀번호 재설정")
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // 위치 정보 그룹
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(16.dp)
-            ) {
-                Text("나의 위치", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("위치: 대한민국, 경기도", style = MaterialTheme.typography.bodyLarge)
-                Text("기기: 이 Android", style = MaterialTheme.typography.bodyLarge)
-                Spacer(modifier = Modifier.height(8.dp))
+                // WebSocket Status Group
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(16.dp)
+                ) {
+                    Text("연결 상태", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // WebSocket Connection Status
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("서버 연결", style = MaterialTheme.typography.bodyLarge)
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(
+                                    color = if (stompClient.stompConnected) Color.Green else Color.Red,
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Friend Location Subscription Status
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("친구 위치 구독", style = MaterialTheme.typography.bodyLarge)
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(
+
+                                    color = if (stompClient.stompConnected && locationReceiver.listenJob?.isActive == true) Color.Green else Color.Red,
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 위치 정보 그룹
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(16.dp)
+                ) {
+                    Text("나의 위치", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("위치: 대한민국, 경기도", style = MaterialTheme.typography.bodyLarge)
+                    Text("기기: 이 Android", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
+    }
+
+    if (showResetPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showResetPasswordDialog = false
+                newPassword = ""
+                confirmPassword = ""
+                passwordError = null
+            },
+            title = { Text("비밀번호 재설정") },
+            text = {
+                Column {
+                    TextField(
+                        value = newPassword,
+                        onValueChange = {
+                            newPassword = it
+                            passwordError = null
+                        },
+                        label = { Text("새 비밀번호") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = confirmPassword,
+                        onValueChange = {
+                            confirmPassword = it
+                            passwordError = null
+                        },
+                        label = { Text("비밀번호 확인") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (passwordError != null) {
+                        Text(
+                            text = passwordError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newPassword.length < 6) {
+                            passwordError = "비밀번호는 6자 이상이어야 합니다"
+                            return@TextButton
+                        }
+                        if (newPassword != confirmPassword) {
+                            passwordError = "비밀번호가 일치하지 않습니다"
+                            return@TextButton
+                        }
+                        viewModel.resetPassword(currentUser?.email ?: "", newPassword, confirmPassword)
+                        showResetPasswordDialog = false
+                    }
+                ) {
+                    Text("확인")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showResetPasswordDialog = false
+                        newPassword = ""
+                        confirmPassword = ""
+                        passwordError = null
+                    }
+                ) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showSuccessDialog = false
+                viewModel.clearError()
+            },
+            title = { Text("알림") },
+            text = { Text("비밀번호가 성공적으로 변경되었습니다.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSuccessDialog = false
+                        viewModel.clearError()
+                    }
+                ) {
+                    Text("확인")
+                }
+            }
+        )
     }
 }
 
@@ -302,39 +440,34 @@ fun SettingsBottomSheetContent(
     val versionName = packageInfo.versionName
     val versionCode = packageInfo.longVersionCode
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .height(400.dp)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
             .padding(horizontal = 16.dp)
     ) {
-        Column(
+        DragHandle()
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "설정", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "여기에 앱 설정 관련 정보를 표시합니다.")
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "앱 버전: $versionName (빌드 $versionCode)",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "로그아웃",
+            style = MaterialTheme.typography.labelLarge,
             modifier = Modifier
-                .fillMaxSize()
-        ) {
-            DragHandle()
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "설정", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "여기에 앱 설정 관련 정보를 표시합니다.")
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "앱 버전: $versionName (빌드 $versionCode)",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "로그아웃",
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .clickable { onLogout() }
-            )
-        }
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .clickable { onLogout() }
+        )
     }
 }
 
@@ -519,7 +652,6 @@ fun FriendsBottomSheetContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-
                         Spacer(modifier = Modifier.height(24.dp))
 
                         // 길 찾기 버튼
@@ -600,6 +732,7 @@ fun FriendListItem(
                 contentScale = ContentScale.Crop
             )
         } else {
+            // 프로필 이미지가 없는 경우 이니셜 표시
             Box(
                 modifier = Modifier
                     .size(40.dp)

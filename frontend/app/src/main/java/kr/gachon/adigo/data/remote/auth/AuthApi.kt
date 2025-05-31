@@ -5,6 +5,7 @@ import kr.gachon.adigo.data.model.dto.CheckDuplicateNumberResponse
 import kr.gachon.adigo.data.model.dto.LoginRequest
 import kr.gachon.adigo.data.model.dto.LoginResponse
 import kr.gachon.adigo.data.model.dto.RefreshTokenRequest
+import kr.gachon.adigo.data.model.dto.ResetPasswordDto
 import kr.gachon.adigo.data.model.dto.SignUpRequest
 import kr.gachon.adigo.data.model.dto.SignUpResponse
 import kr.gachon.adigo.data.model.dto.smsResponse
@@ -39,5 +40,8 @@ interface AuthApi {
 
     @POST("auth/reissue")
     suspend fun refresh(@Body body: RefreshTokenRequest): Response<LoginResponse>
+
+    @POST("auth/resetpassword")
+    suspend fun resetPassword(@Body body: ResetPasswordDto): Response<Unit>
 
 }
