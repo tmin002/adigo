@@ -26,6 +26,7 @@ class FriendListViewModel(
     private val TAG = "FriendListViewModel"
 
     val repo = AdigoApplication.AppContainer.userDatabaseRepo
+    val locationRepo = AdigoApplication.AppContainer.userLocationRepo
 
     /** UI-계층에서 구독할 Flow */
     /** 실시간 DB 친구 목록 observe */
@@ -71,6 +72,7 @@ class FriendListViewModel(
                 val response = AdigoApplication.AppContainer.friendRemote.deleteFriend(friend.email)
                 if (response.isSuccessful) {
                     repo.delete(friend.id)
+                    locationRepo.deleteById(friend.id)
                     repo.updateFriendsFromServer()
                 }
             } catch (e: Exception) {
