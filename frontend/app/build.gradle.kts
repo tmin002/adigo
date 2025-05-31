@@ -20,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId = "kr.gachon.adigo"
-        minSdk = 34
+        minSdk = 33
         targetSdk = 35
         versionCode = buildNumber
         versionName = "$majorVersion.$minorVersion.$patchVersion"
