@@ -48,6 +48,11 @@ import java.nio.charset.StandardCharsets
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.ImeAction
 
 
 
@@ -141,6 +146,36 @@ fun vibratePhone(context: Context) {
     }
 }
 
+class PhoneNumberTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val digitsOnly = text.text.filter { it.isDigit() }
+        val formatted = when {
+            digitsOnly.length <= 3 -> digitsOnly
+            digitsOnly.length <= 7 -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3)}"
+            else -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7)}"
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 3) return offset
+                if (offset <= 7) return offset + 1
+                return offset + 2
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 4) return offset
+                if (offset <= 9) return offset - 1
+                return offset - 2
+            }
+        }
+
+        return TransformedText(
+            text = AnnotatedString(formatted),
+            offsetMapping = offsetMapping
+        )
+    }
+}
+
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun EmailInputScreen(
@@ -186,7 +221,10 @@ fun EmailInputScreen(
     
     // 휴대폰 번호 정규식 (010-1234-5678 형식)
     val phoneRegex = remember { "^01[016789]-\\d{3,4}-\\d{4}\$".toRegex() }
-    val isPhoneNumberValid by derivedStateOf { phoneRegex.matches(phoneNumber) }
+    val isPhoneNumberValid by derivedStateOf { 
+        val digitsOnly = phoneNumber.filter { it.isDigit() }
+        digitsOnly.length == 11 && digitsOnly.startsWith("01")
+    }
     
     // 이메일이 유효하고 중복이 아닐 때 전화번호를 가져오기
     LaunchedEffect(emailValid, emailDuplicate) {
@@ -281,7 +319,7 @@ fun EmailInputScreen(
             // 비밀번호 TextField에 흔들림 효과 적용
             TextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { newValue -> password = newValue },
                 label = { Text("비밀번호") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -301,7 +339,8 @@ fun EmailInputScreen(
                 //비밀번호 자동완성 없애기
                 keyboardOptions = KeyboardOptions(
                     autoCorrectEnabled = false,
-                    keyboardType = KeyboardType.Password
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = { /* 키보드 완료 버튼 동작 */ }
@@ -359,20 +398,38 @@ fun EmailInputScreen(
 
             TextField(
                 value = phoneNumber,
-                onValueChange = { phoneNumber = it
+                onValueChange = { input ->
+                    // 숫자만 입력 가능하도록
+                    val digitsOnly = input.filter { it.isDigit() }
+                    if (digitsOnly.length <= 11) {
+                        phoneNumber = digitsOnly
+                    }
                 },
                 label = { Text("휴대전화번호 (010-1234-5678)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                visualTransformation = PhoneNumberTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 colors = TextFieldDefaults.colors(
                     disabledContainerColor = Color.Transparent,
                     errorContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color(0xFF3F51B5),
-                    unfocusedIndicatorColor = Color.Gray
+                    focusedIndicatorColor = if (isPhoneNumberValid) Color(0xFF3F51B5) else Color.Gray,
+                    unfocusedIndicatorColor = if (isPhoneNumberValid) Color(0xFF3F51B5) else Color.Gray,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
                 )
             )
+
+            if (!isPhoneNumberValid && phoneNumber.isNotEmpty()) {
+                Text(
+                    text = "올바른 전화번호 형식이 아닙니다.",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
             if (isPhoneNumberValid) {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -382,7 +439,6 @@ fun EmailInputScreen(
                         val encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8.toString())
                         var encodedPhoneNumber = URLEncoder.encode(phoneNumber, StandardCharsets.UTF_8.toString())
                         navController.navigate(Screens.VerifyCode.name + "/$encodedEmail" + "/$encodedPhoneNumber")
-
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -392,3 +448,4 @@ fun EmailInputScreen(
         }
     }
 }
+

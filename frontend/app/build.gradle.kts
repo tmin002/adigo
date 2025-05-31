@@ -8,9 +8,9 @@ plugins {
 
 // 버전 관리 변수
 val majorVersion = 1
-val minorVersion = 3
-val patchVersion = 2
-val buildNumber = 5
+val minorVersion = 4
+val patchVersion = 3
+val buildNumber = 7
 
 android {
     namespace = "kr.gachon.adigo"

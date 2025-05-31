@@ -215,7 +215,7 @@ class MainActivity : ComponentActivity() {
             Text(
                 text = "니 지금 어디고?",
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary,
+                color = Color(0xFF2196F3),
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
@@ -236,7 +236,7 @@ class MainActivity : ComponentActivity() {
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF2196F3)
                 )
             ) {
                 Text(
