@@ -26,6 +26,7 @@ class FriendListViewModel(
     private val TAG = "FriendListViewModel"
 
     val repo = AdigoApplication.AppContainer.userDatabaseRepo
+    val locationRepo = AdigoApplication.AppContainer.userLocationRepo
 
     /** UI-계층에서 구독할 Flow */
     /** 실시간 DB 친구 목록 observe */
@@ -43,18 +44,7 @@ class FriendListViewModel(
     /** 서버에서 친구 목록을 받아 DB 에 반영 */
     fun refreshFriends() {
         viewModelScope.launch {
-            try {
-                val response: Response<FriendListResponse> = AdigoApplication.AppContainer.friendRemote.friendList()
-                if (response.isSuccessful) {
-                    response.body()?.let { friendListResponse: FriendListResponse ->
-                        friendListResponse.data.forEach { friend ->
-                            repo.upsert(UserTransformer.modelToEntity(friend))
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("FriendListViewModel", "Failed to refresh friends", e)
-            }
+            repo.updateFriendsFromServer()
         }
     }
 
@@ -79,16 +69,15 @@ class FriendListViewModel(
 
         viewModelScope.launch {
             try {
-
                 val response = AdigoApplication.AppContainer.friendRemote.deleteFriend(friend.email)
                 if (response.isSuccessful) {
-                    refreshFriends()
+                    repo.delete(friend.id)
+                    locationRepo.deleteById(friend.id)
+                    repo.updateFriendsFromServer()
                 }
             } catch (e: Exception) {
                 Log.e("FriendListViewModel", "Failed to delete friend", e)
             }
-
-            repo.delete(friend.id)
         }
     }
 

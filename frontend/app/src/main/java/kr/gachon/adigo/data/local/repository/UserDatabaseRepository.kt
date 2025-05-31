@@ -29,7 +29,7 @@ class UserDatabaseRepository(private val realm: Realm) {
             .flowOn(Dispatchers.IO)
 
     /** 단일 · 일괄 upsert 모두 지원 */
-    suspend fun upsertAll(users: List<UserEntity>) {
+    private suspend fun upsertAll(users: List<UserEntity>) {
         realm.write {
             users.forEach { entity ->
                 copyToRealm(entity, UpdatePolicy.ALL)
@@ -37,7 +37,7 @@ class UserDatabaseRepository(private val realm: Realm) {
         }
     }
 
-    suspend fun upsert(user: UserEntity) = upsertAll(listOf(user))
+    private suspend fun upsert(user: UserEntity) = upsertAll(listOf(user))
 
     suspend fun delete(id: Long) {
         realm.write {
@@ -58,8 +58,20 @@ class UserDatabaseRepository(private val realm: Realm) {
             val response: Response<FriendListResponse> = AdigoApplication.AppContainer.friendRemote.friendList()
             if (response.isSuccessful) {
                 response.body()?.let { friendListResponse: FriendListResponse ->
-                    friendListResponse.data.forEach { friend ->
-                        upsert(UserTransformer.modelToEntity(friend))
+                    val serverFriends =
+                        friendListResponse.data.map { UserTransformer.modelToEntity(it) }
+                    val serverIds = serverFriends.map { it.id }.toSet()
+
+                    realm.write {
+                        // 1. 서버로부터 받은 친구들 upsert
+                        serverFriends.forEach { friend ->
+                            copyToRealm(friend, UpdatePolicy.ALL)
+                        }
+
+                        // 2. 서버에 없는 친구들 삭제
+                        val localFriends = query<UserEntity>().find()
+                        val toDelete = localFriends.filter { it.id !in serverIds }
+                        toDelete.forEach { delete(it) }
                     }
                 }
             }
