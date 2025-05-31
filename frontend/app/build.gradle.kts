@@ -9,7 +9,7 @@ plugins {
 // 버전 관리 변수
 val majorVersion = 1
 val minorVersion = 2
-val patchVersion = 1
+val patchVersion = 2
 val buildNumber = 3
 
 android {
