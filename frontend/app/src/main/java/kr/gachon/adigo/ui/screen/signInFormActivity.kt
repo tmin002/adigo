@@ -48,6 +48,10 @@ import java.nio.charset.StandardCharsets
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
 
 
 
@@ -138,6 +142,36 @@ fun vibratePhone(context: Context) {
             @Suppress("DEPRECATION")
             vibrator.vibrate(150)
         }
+    }
+}
+
+class PhoneNumberTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val digitsOnly = text.text.filter { it.isDigit() }
+        val formatted = when {
+            digitsOnly.length <= 3 -> digitsOnly
+            digitsOnly.length <= 7 -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3)}"
+            else -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7)}"
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 3) return offset
+                if (offset <= 7) return offset + 1
+                return offset + 2
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 4) return offset
+                if (offset <= 9) return offset - 1
+                return offset - 2
+            }
+        }
+
+        return TransformedText(
+            text = AnnotatedString(formatted),
+            offsetMapping = offsetMapping
+        )
     }
 }
 
@@ -359,11 +393,18 @@ fun EmailInputScreen(
 
             TextField(
                 value = phoneNumber,
-                onValueChange = { phoneNumber = it
+                onValueChange = { input ->
+                    // 숫자만 입력 가능하도록
+                    val digitsOnly = input.filter { it.isDigit() }
+                    if (digitsOnly.length <= 11) {
+                        phoneNumber = digitsOnly
+                    }
                 },
                 label = { Text("휴대전화번호 (010-1234-5678)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                visualTransformation = PhoneNumberTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 colors = TextFieldDefaults.colors(
                     disabledContainerColor = Color.Transparent,
                     errorContainerColor = Color.Transparent,
