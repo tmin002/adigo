@@ -690,6 +690,28 @@ fun FriendsBottomSheetContent(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 친구 삭제 버튼
+                        Button(
+                            onClick = { 
+                                friendlistviewModel.deleteFriend(friend)
+                                onClickBack()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text(
+                                text = "친구 삭제",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onError
+                            )
+                        }
                     }
                 }
             }
@@ -778,18 +800,6 @@ fun FriendListItem(
                 text = if (user.isOnline) "🟢 온라인" else "⚪ 마지막 접속: ${formatLastSeen(user.lastSeenString)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = if (user.isOnline) Color(0xFF4CAF50) else Color.Gray
-            )
-        }
-
-        // 삭제 아이콘
-        IconButton(
-            onClick = onDelete,
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = "삭제",
-                tint = MaterialTheme.colorScheme.error
             )
         }
     }
