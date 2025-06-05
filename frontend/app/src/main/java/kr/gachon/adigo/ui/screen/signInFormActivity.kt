@@ -146,32 +146,59 @@ fun vibratePhone(context: Context) {
     }
 }
 
+
+
 class PhoneNumberTransformation : VisualTransformation {
+
     override fun filter(text: AnnotatedString): TransformedText {
-        val digitsOnly = text.text.filter { it.isDigit() }
-        val formatted = when {
-            digitsOnly.length <= 3 -> digitsOnly
-            digitsOnly.length <= 7 -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3)}"
-            else -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7)}"
+        // 1) keep only the first 11 digits
+        val raw = text.text.filter { it.isDigit() }.take(11)
+
+        // 2) build "010-1234-5678" format on the fly
+        val formatted = buildString {
+            append(raw.take(3))
+            if (raw.length > 3) {
+                append('-')
+                append(raw.drop(3).take(4))
+            }
+            if (raw.length > 7) {
+                append('-')
+                append(raw.drop(7))
+            }
         }
 
+        val rawLen       = raw.length          // 0-11
+        val formattedLen = formatted.length    // 0-13
+
         val offsetMapping = object : OffsetMapping {
+
+            // how many dashes are *before* a given raw index?
+            fun dashCountUntil(rawIndex: Int) = when {
+                rawIndex <= 3      -> 0        // 010
+                rawIndex <= 7      -> 1        // 010-1234
+                else               -> 2        // 010-1234-5678
+            }
+
             override fun originalToTransformed(offset: Int): Int {
-                if (offset <= 3) return offset
-                if (offset <= 7) return offset + 1
-                return offset + 2
+                val mapped = offset + dashCountUntil(offset)
+                return mapped.coerceAtMost(formattedLen)
             }
 
             override fun transformedToOriginal(offset: Int): Int {
-                if (offset <= 4) return offset
-                if (offset <= 9) return offset - 1
-                return offset - 2
+                // clamp first, then remove the dashes that might be included
+                val clamped = offset.coerceAtMost(formattedLen)
+                val original = when {
+                    clamped <= 4  -> clamped               // inside "010-"
+                    clamped <= 9  -> clamped - 1           // inside middle block
+                    else          -> clamped - 2           // inside last block
+                }
+                return original.coerceAtMost(rawLen)
             }
         }
 
         return TransformedText(
-            text = AnnotatedString(formatted),
-            offsetMapping = offsetMapping
+            AnnotatedString(formatted),
+            offsetMapping
         )
     }
 }
