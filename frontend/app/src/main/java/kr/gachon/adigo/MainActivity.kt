@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import androidx.compose.runtime.getValue
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -53,6 +54,13 @@ import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
 import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.google.android.gms.common.internal.safeparcel.SafeParcelableSerializer
+import com.google.android.gms.location.ActivityTransition
+import com.google.android.gms.location.ActivityTransitionEvent
+import com.google.android.gms.location.ActivityTransitionResult
+import com.google.android.gms.location.DetectedActivity
+
 
 class MainActivity : ComponentActivity() {
 

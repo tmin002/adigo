@@ -4,6 +4,7 @@ package kr.gachon.adigo.ui.components
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -24,77 +25,65 @@ import androidx.core.content.ContextCompat
 
 @Composable
 fun PermissionGate(
-    content: @Composable () -> Unit          // 권한 OK 후 보여줄 UI
+    content: @Composable () -> Unit
 ) {
     val ctx = LocalContext.current
     var granted by remember { mutableStateOf(false) }
-    var hasBasicLocationPermission by remember { mutableStateOf(false) }
 
-    /* ── 백그라운드 위치 권한 런처 ── */
-    val backgroundLocationLauncher = rememberLauncherForActivityResult(
+    // 요청할 권한 리스트
+    var permissionQueue by remember { mutableStateOf<List<String>>(emptyList()) }
+    var currentRequest by remember { mutableStateOf<String?>(null) }
+
+    // 권한 요청 런처
+    val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            requestIgnoreBatteryOptim(ctx) { granted = true }
-        } else {
-            Toast.makeText(
-                ctx,
-                "백그라운드 위치 권한이 거부되어 앱이 종료된 상태에서는 위치가 전송되지 않습니다.",
-                Toast.LENGTH_LONG
-            ).show()
-            // 기본 위치 권한만으로도 계속 진행
-            requestIgnoreBatteryOptim(ctx) { granted = true }
-        }
-    }
-
-    /* ── 기본 위치 권한 런처 ── */
-    val basicLocationLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { grants ->
-        if (grants.values.all { it }) {
-            hasBasicLocationPermission = true
-            // 기본 위치 권한이 승인되면 백그라운드 위치 권한 요청
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            // 다음 권한으로 이동
+            if (permissionQueue.isNotEmpty()) {
+                val next = permissionQueue.first()
+                permissionQueue = permissionQueue.drop(1)
+                currentRequest = next
             } else {
-                requestIgnoreBatteryOptim(ctx) { granted = true }
+                granted = true
+                currentRequest = null
             }
         } else {
-            Toast.makeText(
-                ctx,
-                "위치 권한이 거부되어 앱 기능이 제한됩니다.",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(ctx, "필수 권한이 거부되어 앱 기능이 제한됩니다.", Toast.LENGTH_LONG).show()
+            currentRequest = null
         }
     }
 
-    /* ── 최초 실행 때 권한 요청 ── */
+    // 최초 실행: 권한 목록 필터링 및 첫 요청 시작
     LaunchedEffect(Unit) {
-        val perms = buildList {
+        val requiredPermissions = buildList {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
                 add(Manifest.permission.FOREGROUND_SERVICE_LOCATION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                 add(Manifest.permission.UWB_RANGING)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                add(Manifest.permission.ACTIVITY_RECOGNITION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                 add(Manifest.permission.POST_NOTIFICATIONS)
         }
-        basicLocationLauncher.launch(perms.toTypedArray())
-    }
 
-    /* ── 권한 승인되면 실제 UI 그리기 ── */
-    if (granted) content()
-}
+        val denied = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(ctx, it) != PackageManager.PERMISSION_GRANTED
+        }
 
-/* 배터리 최적화 무시 요청 → 완료되면 onDone() 호출 */
-private fun requestIgnoreBatteryOptim(ctx: Context, onDone: () -> Unit) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
-        if (!pm.isIgnoringBatteryOptimizations(ctx.packageName)) {
-            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                .setData(Uri.parse("package:${ctx.packageName}"))
-            ctx.startActivity(intent)
+        if (denied.isEmpty()) {
+            granted = true
+        } else {
+            permissionQueue = denied.drop(1)
+            currentRequest = denied.first()
         }
     }
-    onDone()   // 바로 true 로 두고, 사용자가 화면 복귀 시점에도 다시 granted=true 유지
+
+    // 요청 트리거: currentRequest 변경되면 launch 실행
+    LaunchedEffect(currentRequest) {
+        currentRequest?.let { launcher.launch(it) }
+    }
+
+    if (granted) content()
 }

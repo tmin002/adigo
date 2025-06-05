@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.UWB_RANGING" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
 
     <!--내 위치 뜨게 하는 권한-->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
@@ -72,6 +73,18 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".receiver.MotionBroadcastReceiver"
+            android:exported="false">
+            <intent-filter>
+                <!-- 실제 시스템 브로드캐스트 -->
+                <action android:name="com.google.android.location.internal.ACTIVITY_TRANSITION_RESULT" />
+                <!-- 우리가 디버그용으로 보낼 커스텀 액션 -->
+                <action android:name="${applicationId}.TRANSITIONS_RECEIVER_ACTION" />
+            </intent-filter>
+        </receiver>
+
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
