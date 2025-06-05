@@ -17,6 +17,7 @@ foundationAndroid = "1.7.8"       # 이 버전들이 Compose BOM과 호환되는
 securityCrypto = "1.1.0-alpha06"
 material = "1.12.0"
 appcompat = "1.6.1"
+play-services-auth = "21.2.0"
 constraintlayout = "2.1.4"  # <<< constraintlayout 버전 추가
 
 # Annotation Processor
@@ -43,6 +44,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+google-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "play-services-auth" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.10.1" } # 직접 버전 지정됨
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version = "2025.01.00" } # 직접 버전 지정됨, [versions].composeBom과 다름 주의
 androidx-ui = { group = "androidx.compose.ui", name = "ui" } # BOM으로 버전 관리
