@@ -9,4 +9,9 @@ object FlowProvider {
     fun createFloatStateFlow(initial: Float): MutableStateFlow<Float> {
         return MutableStateFlow(initial)
     }
+
+    @JvmStatic // Makes this callable as a static method from Java
+    fun <T> createMutableStateFlow(initialValue: T): MutableStateFlow<T> {
+        return MutableStateFlow(initialValue)
+    }
 }

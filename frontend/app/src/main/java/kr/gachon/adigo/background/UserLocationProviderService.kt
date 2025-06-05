@@ -1,91 +1,89 @@
 package kr.gachon.adigo.background
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.app.*
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.net.ConnectivityManager
 import android.net.Network
-import android.os.*
+import android.os.Build
+import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.*
-import com.google.android.gms.location.ActivityRecognition
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kr.gachon.adigo.AdigoApplication
-import kr.gachon.adigo.receiver.MotionBroadcastReceiver
 
+/**
+ * 네트워크가 연결되어 있을 때만 GPS 좌표를 백엔드로 전송하는 포그라운드 서비스입니다.
+ * 오프라인 시에는 즉시 위치 업데이트를 중단하므로 배터리 소모를 크게 줄일 수 있습니다.
+ */
 class UserLocationProviderService : Service() {
 
     companion object { private const val TAG = "UserLocationProvider" }
 
-    /* ---------- 상태 변수 ---------- */
+    /* ---------- 코루틴 스코프 ---------- */
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    val motionState      = MutableStateFlow(false)  // 움직임 여부
-    private val networkState     = MutableStateFlow(true)   // 데이터망 연결 여부
-    private var requestingLocation = false
+
+    /* ---------- 상태 ---------- */
+    /** 데이터 네트워크 연결 여부 */
+    private val networkState = MutableStateFlow(false)
+
+    /** 현재 GPS 업데이트 중인지 여부 */
+    private var tracking = false
 
     /* ---------- 위치 ---------- */
-    private lateinit var fused: FusedLocationProviderClient
-    private lateinit var locCallback: LocationCallback
+    private lateinit var fused : FusedLocationProviderClient
+    private lateinit var locCb  : LocationCallback
 
     /* ---------- 네트워크 ---------- */
-    private lateinit var cm: ConnectivityManager
-    private lateinit var netCallback: ConnectivityManager.NetworkCallback
+    private lateinit var cm    : ConnectivityManager
+    private lateinit var netCb : ConnectivityManager.NetworkCallback
 
     /* ---------- 생명주기 ---------- */
     override fun onCreate() {
         super.onCreate()
 
-        startForegroundService()
+        startAsForeground()        // 포그라운드 노티 생성 및 시작
+        initNetworkMonitoring()    // 네트워크 콜백 등록
+        initLocationCallback()     // 위치 콜백 생성
+        observeTrackingFlow()      // 연결 상태 변화 감시 → GPS ON/OFF
 
-        initNetworkMonitoring()
-        initMotionDetection()
-        initLocationCallback()
-        observeStates()     // 두 StateFlow를 합쳐서 GPS on/off 제어
-        ensureWebSocketConnection()
-        startFriendLocationRequests()
+        ensureWebSocketConnection() // STOMP 재연결 루프
+        startFriendLocationRequests() // 친구 위치 주기적 요청
         AdigoApplication.AppContainer.wsReceiver.startListening()
     }
 
-    override fun onStartCommand(i: Intent?, f: Int, id: Int): Int =
-        START_STICKY
+    override fun onStartCommand(i: Intent?, f: Int, id: Int): Int = START_STICKY
+    override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        // 정리
-        if (::locCallback.isInitialized) fused.removeLocationUpdates(locCallback)
-        if (::netCallback.isInitialized) cm.unregisterNetworkCallback(netCallback)
-        try {
-            if (hasActivityRecognition()) {
-                activityClient.removeActivityUpdates(activityPi)
-            }
-        } catch (se: SecurityException) {
-            Log.e(TAG, "removeActivityUpdates SecurityException", se)
-        }
-        serviceScope.cancel()
+        fused.removeLocationUpdates(locCb)          // GPS 콜백 해제
+        cm.unregisterNetworkCallback(netCb)         // 네트워크 콜백 해제
+        serviceScope.cancel()                       // 코루틴 취소
         AdigoApplication.AppContainer.wsReceiver.stopListening()
         super.onDestroy()
     }
 
-    override fun onBind(intent: Intent?) = null
-
-    /* ---------- Foreground Notification ---------- */
-    private fun startForegroundService() {
-        val chId = "location_service_channel"
+    /* ---------- 포그라운드 노티 ---------- */
+    private fun startAsForeground() {
+        val channelId = "location_service_channel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val ch = NotificationChannel(chId, "Location Service",
-                NotificationManager.IMPORTANCE_LOW).apply {
+            val ch = NotificationChannel(channelId, "Location Service", NotificationManager.IMPORTANCE_LOW).apply {
                 description = "백그라운드 위치 전송"
             }
             getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
         }
-        val notif = NotificationCompat.Builder(this, chId)
+        val notif = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Adigo 위치 전송 중")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -93,132 +91,91 @@ class UserLocationProviderService : Service() {
         startForeground(1, notif)
     }
 
-    /* ---------- Activity Recognition ---------- */
-    private lateinit var activityClient: ActivityRecognitionClient
-    private lateinit var activityPi: PendingIntent
-
-    @SuppressLint("MissingPermission")  // Permission check는 별도 수행
-    private fun initMotionDetection() {
-        activityClient = ActivityRecognition.getClient(this)
-
-        if (!hasActivityRecognition()) {
-            Log.w(TAG, "ACTIVITY_RECOGNITION permission not granted; motion detection disabled.")
-            return
-        }
-
-        val intent = Intent(this, MotionBroadcastReceiver::class.java)
-        val flags = if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
-        activityPi = PendingIntent.getBroadcast(
-            this, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or flags
-        )
-
-        try {
-            activityClient.requestActivityUpdates(3_000, activityPi)
-                .addOnFailureListener { Log.e(TAG, "AR request 실패", it) }
-        } catch (se: SecurityException) {
-            Log.e(TAG, "Missing ACTIVITY_RECOGNITION permission", se)
-        }
-    }
-
-    /* ---------- Network Monitoring ---------- */
+    /* ---------- 네트워크 모니터링 ---------- */
     private fun initNetworkMonitoring() {
         cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        networkState.value = cm.activeNetwork != null
-        netCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network)  { networkState.value = true }
-            override fun onLost(network: Network)      { networkState.value = false }
+        networkState.value = cm.activeNetwork != null // 초기값 설정
+        netCb = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) { networkState.value = true }
+            override fun onLost(network: Network)     { networkState.value = false }
         }
-        cm.registerDefaultNetworkCallback(netCallback)
+        cm.registerDefaultNetworkCallback(netCb)
     }
 
-    /* ---------- GPS 초기화 (콜백만) ---------- */
+    /* ---------- 위치 콜백 ---------- */
     private fun initLocationCallback() {
         fused = LocationServices.getFusedLocationProviderClient(this)
-        locCallback = object : LocationCallback() {
-            override fun onLocationResult(res: LocationResult) {
-                res.lastLocation?.let { sendLocationUpdate(it) }
+        locCb = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { sendLocation(it) }
             }
         }
     }
 
-    @SuppressLint("MissingPermission")  // we do an explicit check below
-    private fun startLocationUpdates() {
-        if (!hasFineLocation()) {
-            Log.w(TAG, "ACCESS_FINE_LOCATION not granted; GPS updates skipped.")
-            return
-        }
-        try {
-            val req = LocationRequest.Builder(2000)
-                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                .build()
-            fused.requestLocationUpdates(req, locCallback, Looper.getMainLooper())
-        } catch (se: SecurityException) {
-            Log.e(TAG, "requestLocationUpdates SecurityException", se)
+    /* ---------- 연결 상태 변화 감시 ---------- */
+    private fun observeTrackingFlow() = serviceScope.launch {
+        networkState.collect { online ->
+            when {
+                online && !tracking -> startLocationUpdates()
+                !online && tracking -> stopLocationUpdates()
+            }
         }
     }
 
-    private fun stopLocationUpdates() {
+    /* ---------- GPS ON ---------- */
+    private fun startLocationUpdates() {
+        if (!hasFineLocation()) return
+        val req = LocationRequest.Builder(2_000) // 2초마다
+            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+            .build()
         try {
-            fused.removeLocationUpdates(locCallback)
+            fused.requestLocationUpdates(req, locCb, Looper.getMainLooper())
+            tracking = true
+            Log.i(TAG, "GPS ON")
         } catch (se: SecurityException) {
-            Log.e(TAG, "removeLocationUpdates SecurityException", se)
+            Log.e(TAG, "requestLocationUpdates()", se)
         }
+    }
+
+    /* ---------- GPS OFF ---------- */
+    private fun stopLocationUpdates() {
+        try { fused.removeLocationUpdates(locCb) } catch (se: SecurityException) {
+            Log.e(TAG, "removeLocationUpdates()", se)
+        }
+        tracking = false
         Log.i(TAG, "GPS OFF")
     }
 
-    /* ---------- permissions ---------- */
+    /* ---------- 퍼미션 ---------- */
     private fun hasFineLocation() =
-        ContextCompat.checkSelfPermission(this,
-            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-
-    private fun hasActivityRecognition(): Boolean =
-        ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACTIVITY_RECOGNITION
-        ) == PackageManager.PERMISSION_GRANTED
-
-    /* ---------- 상태 변화 감시해서 GPS on/off ---------- */
-    private fun observeStates() = serviceScope.launch {
-        combine(motionState, networkState) { moving, net -> moving && net }
-            .collect { shouldRequest ->
-                if (shouldRequest && !requestingLocation) {
-                    startLocationUpdates(); requestingLocation = true
-                } else if (!shouldRequest && requestingLocation) {
-                    stopLocationUpdates();  requestingLocation = false
-                }
-            }
-    }
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     /* ---------- 위치 전송 ---------- */
-    private fun sendLocationUpdate(loc: Location) = serviceScope.launch {
-        try {
-            if (networkState.value &&
-                AdigoApplication.AppContainer.stompClient.stompConnected) {
-                AdigoApplication.AppContainer.wsSender
-                    .sendMyLocation(loc.latitude, loc.longitude)
-            }
-        } catch (e: Exception) { Log.e(TAG, "sendLocationUpdate error", e) }
+    private fun sendLocation(loc: Location) = serviceScope.launch {
+        if (!networkState.value) return@launch                           // 오프라인이면 전송하지 않음
+        if (!AdigoApplication.AppContainer.stompClient.stompConnected.value) return@launch // WebSocket 미연결 시 스킵
+        runCatching {
+            AdigoApplication.AppContainer.wsSender.sendMyLocation(loc.latitude, loc.longitude)
+        }.onFailure { Log.e(TAG, "sendLocation()", it) }
     }
 
-    /* ---------- WebSocket / 친구 위치 ---------- */
+    /* ---------- WebSocket 연결 유지 ---------- */
     private fun ensureWebSocketConnection() = serviceScope.launch {
         while (isActive) {
-            try {
-                if (!AdigoApplication.AppContainer.stompClient.stompConnected) {
-                    AdigoApplication.AppContainer.stompClient.connect()
-                }
-            } catch (_: Exception) { /* retry */ }
+            if (!AdigoApplication.AppContainer.stompClient.stompConnected.value) {
+                runCatching { AdigoApplication.AppContainer.stompClient.connect() }
+            }
             delay(5_000)
         }
     }
 
+    /* ---------- 친구 위치 주기적 요청 ---------- */
     private var friendJob: Job? = null
     private fun startFriendLocationRequests() {
         friendJob?.cancel()
         friendJob = serviceScope.launch {
             while (isActive) {
-                if (AdigoApplication.AppContainer.stompClient.stompConnected) {
+                if (AdigoApplication.AppContainer.stompClient.stompConnected.value) {
                     AdigoApplication.AppContainer.wsSender.requestFriendLocations()
                 }
                 delay(5_000)

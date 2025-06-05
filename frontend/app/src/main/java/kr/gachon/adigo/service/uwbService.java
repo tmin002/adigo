@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.reactivex.rxjava3.disposables.Disposable;
 import kotlinx.coroutines.flow.MutableStateFlow;
 import kotlinx.coroutines.flow.StateFlow;
+import kr.gachon.adigo.service.FlowProvider;
 
 public class uwbService {
 
@@ -33,8 +34,14 @@ public class uwbService {
     private final AtomicReference<UwbClientSessionScope> sessionScopeRef = new AtomicReference<>();
     private Disposable disposable;
 
-    private final MutableStateFlow<Float> distance = FlowProvider.createFloatStateFlow(0f);
-    private final MutableStateFlow<Float> angle = FlowProvider.createFloatStateFlow(0f);
+    // Use FlowUtils to create MutableStateFlow instances
+    private final MutableStateFlow<Float> distance = FlowProvider.createMutableStateFlow(0f);
+    private final MutableStateFlow<Float> angle = FlowProvider.createMutableStateFlow(0f);
+
+    private final MutableStateFlow<String> localUwbAddressFlow = FlowProvider.createMutableStateFlow("N/A");
+    private final MutableStateFlow<String> localUwbChannelFlow = FlowProvider.createMutableStateFlow("N/A");
+    private final MutableStateFlow<String> localUwbPreambleIndexFlow = FlowProvider.createMutableStateFlow("N/A");
+
 
     public uwbService(Context context) {
         this.uwbManager = UwbManager.createInstance(context);
@@ -51,11 +58,42 @@ public class uwbService {
                     : UwbManagerRx.controleeSessionScopeSingle(uwbManager).blockingGet();
             sessionScopeRef.set(scope);
             Log.d(TAG, "Session scope acquired successfully.");
+            updateLocalUwbInfo(scope);
             Log.d(TAG, getLocalInfo());
         } catch (Exception e) {
             Log.e(TAG, "Failed to set session scope", e);
+            localUwbAddressFlow.setValue("Error");
+            localUwbChannelFlow.setValue("Error");
+            localUwbPreambleIndexFlow.setValue("Error");
         }
     }
+
+    private void updateLocalUwbInfo(UwbClientSessionScope scope) {
+        try {
+            if (isController && scope instanceof UwbControllerSessionScope) {
+                UwbControllerSessionScope cScope = (UwbControllerSessionScope) scope;
+                localUwbAddressFlow.setValue(String.valueOf(Shorts.fromByteArray(cScope.getLocalAddress().getAddress())));
+                localUwbChannelFlow.setValue(String.valueOf(cScope.getUwbComplexChannel().getChannel()));
+                localUwbPreambleIndexFlow.setValue(String.valueOf(cScope.getUwbComplexChannel().getPreambleIndex()));
+            } else if (!isController && scope instanceof UwbControleeSessionScope) {
+                UwbControleeSessionScope cScope = (UwbControleeSessionScope) scope;
+                localUwbAddressFlow.setValue(String.valueOf(Shorts.fromByteArray(cScope.getLocalAddress().getAddress())));
+                localUwbChannelFlow.setValue("9 (Fixed for Controlee)");
+                localUwbPreambleIndexFlow.setValue("N/A (Controlee)");
+            } else {
+                Log.w(TAG, "Scope type mismatch or null scope during info update.");
+                localUwbAddressFlow.setValue("N/A");
+                localUwbChannelFlow.setValue("N/A");
+                localUwbPreambleIndexFlow.setValue("N/A");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating local UWB info flows", e);
+            localUwbAddressFlow.setValue("Error");
+            localUwbChannelFlow.setValue("Error");
+            localUwbPreambleIndexFlow.setValue("Error");
+        }
+    }
+
 
     public void setRoleAsync(boolean controller, Runnable onComplete) {
         new Thread(() -> {
@@ -69,27 +107,35 @@ public class uwbService {
     public void startRanging(int address, Integer preambleIndex) {
         Log.d(TAG, "Starting ranging with address: " + address + ", preambleIndex: " + preambleIndex);
 
-        if (sessionScopeRef.get() == null) {
-            Log.w(TAG, "SessionScope is null. Call setRole() first.");
+        UwbClientSessionScope currentScope = sessionScopeRef.get();
+        if (currentScope == null) {
+            Log.w(TAG, "SessionScope is null. Call setRole() first or wait for it to complete.");
             return;
         }
+        startRangingInternal(address, preambleIndex, currentScope);
+    }
 
+    private void startRangingInternal(int address, Integer preambleIndex, UwbClientSessionScope clientSessionScope) {
         try {
             UwbAddress peerAddress = new UwbAddress(Shorts.toByteArray((short) address));
             UwbComplexChannel uwbChannel;
 
             if (isController) {
-                uwbChannel = ((UwbControllerSessionScope) sessionScopeRef.get()).getUwbComplexChannel();
-                Log.d(TAG, "Using controller's channel: " + uwbChannel.getChannel());
+                if (!(clientSessionScope instanceof UwbControllerSessionScope)) {
+                    Log.e(TAG, "Session scope is not UwbControllerSessionScope for controller role.");
+                    return;
+                }
+                uwbChannel = ((UwbControllerSessionScope) clientSessionScope).getUwbComplexChannel();
+                Log.d(TAG, "Using controller's channel: " + uwbChannel.getChannel() + ", Preamble: " + uwbChannel.getPreambleIndex());
             } else {
-                int preamble = preambleIndex != null ? preambleIndex : 5;
+                int preamble = preambleIndex != null ? preambleIndex : 11;
                 uwbChannel = new UwbComplexChannel(9, preamble);
-                Log.d(TAG, "Controlee using custom channel with preamble: " + preamble);
+                Log.d(TAG, "Controlee using channel 9 with preamble: " + preamble);
             }
 
             RangingParameters params = new RangingParameters(
                     RangingParameters.CONFIG_MULTICAST_DS_TWR,
-                    12345,
+                    clientSessionScope.getLocalAddress().hashCode(), // Session ID from local address hash
                     0,
                     new byte[8],
                     null,
@@ -98,34 +144,34 @@ public class uwbService {
                     RangingParameters.RANGING_UPDATE_RATE_AUTOMATIC
             );
 
-            if (disposable != null) {
+            if (disposable != null && !disposable.isDisposed()) {
                 disposable.dispose();
                 Log.d(TAG, "Disposed old ranging session.");
             }
 
-            disposable = UwbClientSessionScopeRx.rangingResultsObservable(sessionScopeRef.get(), params)
+            disposable = UwbClientSessionScopeRx.rangingResultsObservable(clientSessionScope, params)
                     .subscribe(result -> {
                         if (result instanceof RangingResult.RangingResultPosition) {
                             RangingResult.RangingResultPosition pos = (RangingResult.RangingResultPosition) result;
-                            Log.d(TAG, "RangingResult received.");
 
-                            if (pos.getPosition().getDistance() != null) {
+                            if (pos.getPosition() != null && pos.getPosition().getDistance() != null) {
                                 float d = pos.getPosition().getDistance().getValue();
                                 distance.setValue(d);
-                                Log.d(TAG, "Distance: " + d);
                             }
 
-                            if (pos.getPosition().getAzimuth() != null) {
+                            if (pos.getPosition() != null && pos.getPosition().getAzimuth() != null) {
                                 float a = pos.getPosition().getAzimuth().getValue();
                                 angle.setValue(a);
-                                Log.d(TAG, "Azimuth: " + a);
                             }
+                        } else if (result instanceof RangingResult.RangingResultPeerDisconnected) {
+                            //Log.w(TAG, "Ranging peer disconnected: " + ((RangingResult.RangingResultPeerDisconnected) result).getPeerDevice().getAddress());
                         } else {
-                            Log.w(TAG, "Non-position ranging result received.");
+                            Log.w(TAG, "Non-position ranging result received: " + result.getClass().getSimpleName());
                         }
                     }, error -> {
                         Log.e(TAG, "Error during ranging", error);
                     });
+            Log.d(TAG, "Ranging session started/restarted.");
         } catch (Exception e) {
             Log.e(TAG, "Failed to start ranging", e);
         }
@@ -139,25 +185,33 @@ public class uwbService {
         } else {
             Log.d(TAG, "No active ranging to stop.");
         }
+        distance.setValue(0f);
+        angle.setValue(0f);
     }
 
     public String getLocalInfo() {
+        UwbClientSessionScope currentScope = sessionScopeRef.get();
+        if (currentScope == null) {
+            return "Unknown (SessionScope not yet initialized)";
+        }
         try {
-            if (isController) {
-                UwbControllerSessionScope scope = (UwbControllerSessionScope) sessionScopeRef.get();
+            if (isController && currentScope instanceof UwbControllerSessionScope) {
+                UwbControllerSessionScope scope = (UwbControllerSessionScope) currentScope;
                 return "Controller\nAddress: " + Shorts.fromByteArray(scope.getLocalAddress().getAddress()) +
                         "\nChannel: " + scope.getUwbComplexChannel().getChannel() +
                         "\nPreamble: " + scope.getUwbComplexChannel().getPreambleIndex();
-            } else {
-                UwbControleeSessionScope scope = (UwbControleeSessionScope) sessionScopeRef.get();
+            } else if (!isController && currentScope instanceof UwbControleeSessionScope) {
+                UwbControleeSessionScope scope = (UwbControleeSessionScope) currentScope;
                 return "Controlee\nAddress: " + Shorts.fromByteArray(scope.getLocalAddress().getAddress()) +
                         "\nSupports Distance: " + scope.getRangingCapabilities().isDistanceSupported() +
                         "\nSupports Azimuth: " + scope.getRangingCapabilities().isAzimuthalAngleSupported() +
                         "\nSupports Elevation: " + scope.getRangingCapabilities().isElevationAngleSupported();
+            } else {
+                return "Unknown (Scope type mismatch or not UWB scope)";
             }
         } catch (Exception e) {
             Log.e(TAG, "Error retrieving local info", e);
-            return "Unknown";
+            return "Unknown (Error)";
         }
     }
 
@@ -167,5 +221,17 @@ public class uwbService {
 
     public StateFlow<Float> getAngle() {
         return angle;
+    }
+
+    public StateFlow<String> getLocalUwbAddressFlow() {
+        return localUwbAddressFlow;
+    }
+
+    public StateFlow<String> getLocalUwbChannelFlow() {
+        return localUwbChannelFlow;
+    }
+
+    public StateFlow<String> getLocalUwbPreambleIndexFlow() {
+        return localUwbPreambleIndexFlow;
     }
 }
