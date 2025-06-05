@@ -8,6 +8,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
@@ -29,22 +32,24 @@ class UserLocationWebSocketReceiver(
     private val TAG = "UserLocationReceiver"
     internal var listenJob: Job? = null
 
+
+
     // Destination for receiving friend locations as per spec
     private val FRIENDS_LOCATION_RESPONSE_DESTINATION = "/user/queue/friendsLocationResponse"
 
     fun startListening() {
         if (listenJob != null) return               // 이미 시작되어 있으면 무시
         Log.d(TAG, "🔔 startListening")
-
         listenJob = coroutineScope.launch {
             /** 1️⃣  STOMP 연결 상태 감시 → 연결되면 구독 */
             launch {
                 while (isActive) {
-                    if (stompClient.stompConnected &&
+                    if (stompClient.stompConnected.value &&
                         !stompClient.isSubscribed(FRIENDS_LOCATION_RESPONSE_DESTINATION))       // ← 확장 함수(아래)로 체크
                     {
                         stompClient.subscribe(FRIENDS_LOCATION_RESPONSE_DESTINATION)
                         Log.i(TAG, "SUBSCRIBE sent for $FRIENDS_LOCATION_RESPONSE_DESTINATION")
+
                     }
                     delay(500)  // 가벼운 폴링
                 }

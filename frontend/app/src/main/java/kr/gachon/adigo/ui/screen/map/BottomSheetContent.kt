@@ -78,7 +78,7 @@ fun DragHandle() {
 fun MyPageBottomSheetContent() {
     // Get WebSocket components from Application
     val stompClient = remember { AdigoApplication.AppContainer.stompClient }
-    val locationReceiver = remember { AdigoApplication.AppContainer.wsReceiver }
+    val isConnected by stompClient.stompConnected.collectAsState()
 
     val viewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
     val currentUser by viewModel.currentUser.collectAsState()
@@ -288,7 +288,7 @@ fun MyPageBottomSheetContent() {
                             modifier = Modifier
                                 .size(12.dp)
                                 .background(
-                                    color = if (stompClient.stompConnected) Color.Green else Color.Red,
+                                    color = if (isConnected) Color.Green else Color.Red,
                                     shape = CircleShape
                                 )
                         )
@@ -296,23 +296,7 @@ fun MyPageBottomSheetContent() {
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Friend Location Subscription Status
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("친구 위치 구독", style = MaterialTheme.typography.bodyLarge)
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(
 
-                                    color = if (stompClient.stompConnected && locationReceiver.listenJob?.isActive == true) Color.Green else Color.Red,
-                                    shape = CircleShape
-                                )
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
