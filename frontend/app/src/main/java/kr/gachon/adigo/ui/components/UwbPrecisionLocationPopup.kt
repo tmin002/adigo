@@ -7,11 +7,14 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -19,7 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
+//import androidx.compose.ui.draw.scale // Not used directly in this version of popup
 import kotlinx.coroutines.launch
 import kr.gachon.adigo.R
 import kr.gachon.adigo.service.uwbService
@@ -28,9 +31,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.TextFieldDefaults // Ensure this is imported for OutlinedTextField colors
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UwbPrecisionLocationPopup(
     isVisible: Boolean,
@@ -52,9 +57,10 @@ fun UwbPrecisionLocationPopup(
     val localAddress by viewModel.localUwbAddress.collectAsState()
     val localChannel by viewModel.localUwbChannel.collectAsState()
     val localPreamble by viewModel.localUwbPreambleIndex.collectAsState()
+    val isControllerRole = viewModel.isController // This is already a State<Boolean>
 
-    // Correctly access the isController state (it's already a State object)
-    val isControllerRole = viewModel.isController
+    // Collect ranging status
+    val isRangingActive by viewModel.isRangingActive.collectAsState()
 
     val backgroundColor by animateColorAsState(
         targetValue = when {
@@ -73,7 +79,6 @@ fun UwbPrecisionLocationPopup(
         }
     }
 
-    // AnimatedVisibility handles the enter/exit for the whole popup
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInVertically(
@@ -85,9 +90,9 @@ fun UwbPrecisionLocationPopup(
             animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
         ) + fadeOut(animationSpec = tween(durationMillis = 300))
     ) {
-        Box( // This Box is now inside AnimatedVisibility to ensure it's part of the animation
+        Box(
             modifier = Modifier
-                .fillMaxSize() // Fill the space made available by AnimatedVisibility
+                .fillMaxSize()
                 .zIndex(10f),
             contentAlignment = Alignment.TopCenter
         ) {
@@ -105,20 +110,29 @@ fun UwbPrecisionLocationPopup(
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    IconButton(
-                        onClick = {
-                            viewModel.stopUwb()
-                            onDismissRequest()
-                        },
-                        modifier = Modifier.align(Alignment.Start).size(32.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "닫기",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
+                        IconButton(
+                            onClick = {
+                                viewModel.stopUwb()
+                                onDismissRequest()
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "닫기",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        // Ranging Status Indicator
+                        RangingStatusIndicator(isActive = isRangingActive)
                     }
+
 
                     Spacer(Modifier.height(8.dp))
 
@@ -134,7 +148,7 @@ fun UwbPrecisionLocationPopup(
                     Spacer(Modifier.height(12.dp))
 
                     Text(
-                        text = "My Role: ${if (isControllerRole) "Controller" else "Controlee"}", // Use the corrected state
+                        text = "My Role: ${if (isControllerRole) "Controller" else "Controlee"}",
                         color = Color.White, fontSize = 13.sp,
                         modifier = Modifier.padding(bottom = 2.dp)
                     )
@@ -149,8 +163,8 @@ fun UwbPrecisionLocationPopup(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
-                    val peerChannelLabel = if (isControllerRole) "Peer Channel" else "My Listen Ch" // Use the corrected state
-                    val peerPreambleLabel = if (isControllerRole) "Peer Preamble" else "My Listen Preamble" // Use the corrected state
+                    val peerChannelLabel = if (isControllerRole) "Peer Channel" else "My Listen Ch"
+                    val peerPreambleLabel = if (isControllerRole) "Peer Preamble" else "My Listen Preamble"
 
                     OutlinedTextField(
                         value = peerAddressInput,
@@ -189,18 +203,23 @@ fun UwbPrecisionLocationPopup(
                         Button(
                             onClick = {
                                 coroutineScope.launch {
-                                    viewModel.startUwb(peerAddressInput, configChannelInput, configPreambleInput)
+                                    // Toggle: if active, stop; if inactive, start
+                                    if (isRangingActive) {
+                                        viewModel.stopUwb()
+                                    } else {
+                                        viewModel.startUwb(peerAddressInput, configChannelInput, configPreambleInput)
+                                    }
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White.copy(alpha = 0.9f),
-                                contentColor = Color.DarkGray
+                                containerColor = if (isRangingActive) Color.Red.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.9f),
+                                contentColor = if (isRangingActive) Color.White else Color.DarkGray
                             ),
                             border = BorderStroke(1.dp, Color.White)
                         ) {
-                            Text("연결 시작")
+                            Text(if (isRangingActive) "연결 중단" else "연결 시작")
                         }
-                        ControllerSwitch(viewModel) // Pass the whole viewModel
+                        ControllerSwitch(viewModel)
                     }
                     Spacer(Modifier.height(8.dp))
                 }
@@ -209,16 +228,35 @@ fun UwbPrecisionLocationPopup(
     }
 }
 
+@Composable
+fun RangingStatusIndicator(isActive: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(if (isActive) Color(0xFF4CAF50) else Color.Red) // Green for active, Red for inactive
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = if (isActive) "Ranging" else "Idle",
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+
 
 
 @Composable
-fun ControllerSwitch(viewModel: UwbLocationViewModel) { // Pass viewModel
-    // Directly use viewModel.isController for the checked state
+fun ControllerSwitch(viewModel: UwbLocationViewModel) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("Controller", color = Color.White, fontSize = 14.sp)
         Spacer(Modifier.width(8.dp))
         Switch(
-            checked = viewModel.isController, // Corrected: Direct use
+            checked = viewModel.isController,
             onCheckedChange = { viewModel.setControllerState(it) },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.primary,
@@ -229,8 +267,6 @@ fun ControllerSwitch(viewModel: UwbLocationViewModel) { // Pass viewModel
         )
     }
 }
-
-// Removed the problematic UwbLocationViewModel.isControllerState() extension function
 
 @Composable
 fun DirectionArrow(angle: Float) {
@@ -253,7 +289,7 @@ fun DirectionArrow(angle: Float) {
 @Composable
 fun DistanceMeter(distance: Float) {
     Text(
-        text = if (distance != 0f) String.format("%.1f m", distance) else "--.- m", // Check if not exactly 0
+        text = if (distance != 0f) String.format("%.1f m", distance) else "--.- m",
         fontSize = 28.sp,
         color = Color.White,
         style = MaterialTheme.typography.headlineMedium
@@ -264,6 +300,10 @@ fun DistanceMeter(distance: Float) {
 @Composable
 fun UwbPrecisionLocationPopupPreview() {
     val context = LocalContext.current
+    // In a real app, FlowProvider would be your kr.gachon.adigo.util.FlowUtils
+    // For preview, we might need a mock FlowProvider if it's not available in this context
+    // or ensure the uwbService can be instantiated without it crashing for preview.
+    // For simplicity, assuming uwbService can be created.
     val mockUwbService = remember { uwbService(context) }
     val viewModel = remember { UwbLocationViewModel(mockUwbService) }
 

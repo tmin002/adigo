@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.reactivex.rxjava3.disposables.Disposable;
 import kotlinx.coroutines.flow.MutableStateFlow;
 import kotlinx.coroutines.flow.StateFlow;
-import kr.gachon.adigo.service.FlowProvider;
+import kr.gachon.adigo.service.FlowProvider; // Assuming FlowProvider is your kr.gachon.adigo.util.FlowUtils
 
 public class uwbService {
 
@@ -41,6 +41,9 @@ public class uwbService {
     private final MutableStateFlow<String> localUwbChannelFlow = FlowProvider.createMutableStateFlow("N/A");
     private final MutableStateFlow<String> localUwbPreambleIndexFlow = FlowProvider.createMutableStateFlow("N/A");
 
+    // New StateFlow for ranging status
+    private final MutableStateFlow<Boolean> isRangingActiveFlow = FlowProvider.createMutableStateFlow(false);
+
 
     public uwbService(Context context) {
         this.uwbManager = UwbManager.createInstance(context);
@@ -51,7 +54,6 @@ public class uwbService {
         this.isController = controller;
         Log.d(TAG, "Setting role: " + (controller ? "Controller" : "Controlee"));
 
-        // Reset local channel/preamble for controlee when role changes, will be set on startRanging
         if (!controller) {
             localUwbChannelFlow.setValue("N/A");
             localUwbPreambleIndexFlow.setValue("N/A");
@@ -88,14 +90,11 @@ public class uwbService {
                 localUwbChannelFlow.setValue(String.valueOf(cScope.getUwbComplexChannel().getChannel()));
                 localUwbPreambleIndexFlow.setValue(String.valueOf(cScope.getUwbComplexChannel().getPreambleIndex()));
             } else if (!isController && scope instanceof UwbControleeSessionScope) {
-                // For Controlee, channel and preamble are set during startRanging.
-                // Here, we just confirm address. Channel/Preamble might be "N/A" until ranging starts.
-                // If localUwbChannelFlow still "N/A", it means ranging hasn't started for controlee yet.
                 if (localUwbChannelFlow.getValue().equals("N/A")) {
-                    localUwbChannelFlow.setValue("Unset"); // Or keep N/A
+                    localUwbChannelFlow.setValue("Unset");
                 }
                 if (localUwbPreambleIndexFlow.getValue().equals("N/A")) {
-                    localUwbPreambleIndexFlow.setValue("Unset"); // Or keep N/A
+                    localUwbPreambleIndexFlow.setValue("Unset");
                 }
             } else {
                 Log.w(TAG, "Scope type mismatch during info update.");
@@ -120,12 +119,6 @@ public class uwbService {
         }).start();
     }
 
-    // New signature:
-    // peerAddress: Address of the device to range with.
-    // configParamChannel: If Controller, this is informational (expected peer channel).
-    //                     If Controlee, this is the channel Controlee will listen on.
-    // configParamPreamble: If Controller, this is informational (expected peer preamble).
-    //                      If Controlee, this is the preamble Controlee will listen with.
     public void startRanging(int peerAddress, int configParamChannel, int configParamPreamble) {
         Log.d(TAG, "Attempting to start ranging. MyRole: " + (isController ? "Controller" : "Controlee") +
                 ", PeerAddr: " + peerAddress +
@@ -134,6 +127,7 @@ public class uwbService {
         UwbClientSessionScope currentScope = sessionScopeRef.get();
         if (currentScope == null) {
             Log.w(TAG, "SessionScope is null. Call setRole() first or wait for it to complete.");
+            isRangingActiveFlow.setValue(false); // Ensure it's false if we can't start
             return;
         }
         startRangingInternal(peerAddress, configParamChannel, configParamPreamble, currentScope);
@@ -147,39 +141,37 @@ public class uwbService {
             if (isController) {
                 if (!(clientSessionScope instanceof UwbControllerSessionScope)) {
                     Log.e(TAG, "Session scope is not UwbControllerSessionScope for controller role.");
+                    isRangingActiveFlow.setValue(false);
                     return;
                 }
-                // Controller uses its own pre-configured channel and preamble
                 complexChannelForSession = ((UwbControllerSessionScope) clientSessionScope).getUwbComplexChannel();
                 Log.d(TAG, "Controller using its own channel: " + complexChannelForSession.getChannel() +
                         ", Preamble: " + complexChannelForSession.getPreambleIndex() +
                         ". Expecting peer on Ch: " + configChannel + ", Preamble: " + configPreamble);
-                // Update local info display to ensure it shows controller's actual channel/preamble
                 localUwbChannelFlow.setValue(String.valueOf(complexChannelForSession.getChannel()));
                 localUwbPreambleIndexFlow.setValue(String.valueOf(complexChannelForSession.getPreambleIndex()));
 
             } else { // Controlee
                 if (!(clientSessionScope instanceof UwbControleeSessionScope)) {
                     Log.e(TAG, "Session scope is not UwbControleeSessionScope for controlee role.");
+                    isRangingActiveFlow.setValue(false);
                     return;
                 }
-                // Controlee uses the provided configChannel and configPreamble to listen
                 complexChannelForSession = new UwbComplexChannel(configChannel, configPreamble);
                 Log.d(TAG, "Controlee configuring to listen on Channel: " + configChannel +
                         ", Preamble: " + configPreamble + ". Expecting peer: " + peerDeviceAddress);
-                // Update local info flows for Controlee to reflect its listening parameters
                 localUwbChannelFlow.setValue(String.valueOf(configChannel));
                 localUwbPreambleIndexFlow.setValue(String.valueOf(configPreamble));
             }
 
             RangingParameters params = new RangingParameters(
-                    RangingParameters.CONFIG_MULTICAST_DS_TWR, // Or other config
-                    clientSessionScope.getLocalAddress().hashCode(), // Session ID
+                    RangingParameters.CONFIG_MULTICAST_DS_TWR,
+                    clientSessionScope.getLocalAddress().hashCode(),
                     0,
-                    new byte[8], // sessionKeyInfo (can be null if not used by profile)
-                    null,        // subSessionKeyInfo (can be null)
-                    complexChannelForSession, // The UWB channel local device will use
-                    Collections.singletonList(new UwbDevice(peerUwbAddress)), // The peer device
+                    new byte[8],
+                    null,
+                    complexChannelForSession,
+                    Collections.singletonList(new UwbDevice(peerUwbAddress)),
                     RangingParameters.RANGING_UPDATE_RATE_AUTOMATIC
             );
 
@@ -190,6 +182,7 @@ public class uwbService {
 
             disposable = UwbClientSessionScopeRx.rangingResultsObservable(clientSessionScope, params)
                     .subscribe(result -> {
+                        if (!isRangingActiveFlow.getValue()) isRangingActiveFlow.setValue(true); // Set active on first result
                         if (result instanceof RangingResult.RangingResultPosition) {
                             RangingResult.RangingResultPosition pos = (RangingResult.RangingResultPosition) result;
                             if (pos.getPosition() != null && pos.getPosition().getDistance() != null) {
@@ -199,17 +192,25 @@ public class uwbService {
                                 angle.setValue(pos.getPosition().getAzimuth().getValue());
                             }
                         } else if (result instanceof RangingResult.RangingResultPeerDisconnected) {
-                            //Log.w(TAG, "Ranging peer disconnected: " + ((RangingResult.RangingResultPeerDisconnected) result).getPeerDevice().getAddress());
+                            // Log.w(TAG, "Ranging peer disconnected: " + ((RangingResult.RangingResultPeerDisconnected) result).getPeerDevice().getAddress());
+                            // Consider setting isRangingActiveFlow to false here or on error
                         } else {
                             Log.w(TAG, "Non-position ranging result received: " + result.getClass().getSimpleName());
                         }
                     }, error -> {
                         Log.e(TAG, "Error during ranging", error);
+                        isRangingActiveFlow.setValue(false); // Set inactive on error
                     });
-            Log.d(TAG, "Ranging session started/restarted with local Ch: " + complexChannelForSession.getChannel() +
+            Log.d(TAG, "Ranging session initiated with local Ch: " + complexChannelForSession.getChannel() +
                     " Preamble: " + complexChannelForSession.getPreambleIndex());
+            // isRangingActiveFlow.setValue(true); // Set active immediately on initiation
+            // It's better to set it true when the first ranging result comes in or if the subscription is successful without immediate error.
+            // For simplicity, we can set it here, but it might be true for a moment even if connection fails immediately.
+            // Let's set it true upon successful subscription, and false on error or explicit stop.
+            isRangingActiveFlow.setValue(true); // If subscription is successful, consider it active.
         } catch (Exception e) {
             Log.e(TAG, "Failed to start ranging", e);
+            isRangingActiveFlow.setValue(false); // Set inactive on failure to start
         }
     }
 
@@ -223,6 +224,7 @@ public class uwbService {
         }
         distance.setValue(0f);
         angle.setValue(0f);
+        isRangingActiveFlow.setValue(false); // Set inactive on stop
     }
 
     public String getLocalInfo() {
@@ -233,16 +235,14 @@ public class uwbService {
         try {
             String role = isController ? "Controller" : "Controlee";
             String address = String.valueOf(Shorts.fromByteArray(currentScope.getLocalAddress().getAddress()));
-            String channel = localUwbChannelFlow.getValue(); // Use the flow's current value
-            String preamble = localUwbPreambleIndexFlow.getValue(); // Use the flow's current value
+            String channel = localUwbChannelFlow.getValue();
+            String preamble = localUwbPreambleIndexFlow.getValue();
 
             if (isController && currentScope instanceof UwbControllerSessionScope) {
-                // Ensure flows are updated if they weren't by startRanging yet for some reason
                 UwbControllerSessionScope cScope = (UwbControllerSessionScope) currentScope;
                 channel = String.valueOf(cScope.getUwbComplexChannel().getChannel());
                 preamble = String.valueOf(cScope.getUwbComplexChannel().getPreambleIndex());
             }
-            // For Controlee, channel/preamble are set by startRanging and reflected in flows.
 
             return role + "\nAddress: " + address +
                     "\nChannel: " + channel +
@@ -272,5 +272,10 @@ public class uwbService {
 
     public StateFlow<String> getLocalUwbPreambleIndexFlow() {
         return localUwbPreambleIndexFlow;
+    }
+
+    // Getter for the new flow
+    public StateFlow<Boolean> getIsRangingActiveFlow() {
+        return isRangingActiveFlow;
     }
 }
