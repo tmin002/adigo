@@ -107,7 +107,10 @@ class UserLocationProviderService : Service() {
         fused = LocationServices.getFusedLocationProviderClient(this)
         locCb = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
-                result.lastLocation?.let { sendLocation(it) }
+                result.lastLocation?.let { 
+                    sendLocation(it)
+                    AdigoApplication.AppContainer.userLocationRepo.updateCurrentLocation(it)
+                }
             }
         }
     }

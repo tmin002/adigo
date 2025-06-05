@@ -69,7 +69,10 @@ class AdigoApplication : Application() {
             ).deleteRealmIfMigrationNeeded()
                 .build()
         )
-        container.userLocationRepo = UserLocationRepository(container.realm)
+        container.userLocationRepo = UserLocationRepository(
+            realm = container.realm,
+            context = applicationContext
+        )
         container.userDatabaseRepo = UserDatabaseRepository(container.realm)
 
 

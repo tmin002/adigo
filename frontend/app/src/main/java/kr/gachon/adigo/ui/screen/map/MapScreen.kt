@@ -74,6 +74,7 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
         FriendLocationViewModel(AdigoApplication.AppContainer.userLocationRepo)
     }
     val friends by friendLocationViewModel.friends.collectAsState()
+    val friendsWithDistance by friendLocationViewModel.friendsWithDistance.collectAsState()
 
     var selectedContent by remember { mutableStateOf(BottomSheetContentType.FRIENDS) }
     var friendScreenState by remember { mutableStateOf<FriendScreenState>(FriendScreenState.List) }
