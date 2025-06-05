@@ -8,7 +8,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,20 +27,21 @@ import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.TextFieldDefaults // Ensure this is imported for OutlinedTextField colors
+import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun UwbPrecisionLocationPopup(
     isVisible: Boolean,
     onDismissRequest: () -> Unit,
     viewModel: UwbLocationViewModel
-
 ) {
-
-
     val coroutineScope = rememberCoroutineScope()
 
-    var address by remember { mutableStateOf("") }
-    var channel by remember { mutableStateOf("") }
+    var peerAddressInput by remember { mutableStateOf(UwbLocationViewModel.DEFAULT_PEER_ADDRESS.toString()) }
+    var configChannelInput by remember { mutableStateOf(UwbLocationViewModel.DEFAULT_CONFIG_CHANNEL.toString()) }
+    var configPreambleInput by remember { mutableStateOf(UwbLocationViewModel.DEFAULT_CONFIG_PREAMBLE.toString()) }
 
     val context = LocalContext.current
     val vibrator = context.getSystemService(Vibrator::class.java)
@@ -49,169 +49,194 @@ fun UwbPrecisionLocationPopup(
     val distance by viewModel.distance.collectAsState()
     val angle by viewModel.angle.collectAsState()
 
-    // 배경색을 거리별로 점진적으로 변경
+    val localAddress by viewModel.localUwbAddress.collectAsState()
+    val localChannel by viewModel.localUwbChannel.collectAsState()
+    val localPreamble by viewModel.localUwbPreambleIndex.collectAsState()
+
+    // Correctly access the isController state (it's already a State object)
+    val isControllerRole = viewModel.isController
+
     val backgroundColor by animateColorAsState(
-        targetValue = when { // 거리 좁혀질수록 회색 -> 초록색으로 변경
-            distance <= 5f -> Color(0xFF008000) // 1m 이하: 진한 초록색
-            distance <= 20f -> Color(0xFF32CD32) // 20m 이하: 중간 초록색
-            distance <= 100f -> Color(0xFF90EE90) // 100m 이하: 밝은 초록색
-            else -> Color(0xFFA9A9A9) // 그 외: 회색
-        }
+        targetValue = when {
+            distance <= 1f && distance > 0f -> Color(0xFF006400)
+            distance <= 5f && distance > 0f -> Color(0xFF008000)
+            distance <= 20f && distance > 0f -> Color(0xFF32CD32)
+            distance <= 100f && distance > 0f -> Color(0xFF90EE90)
+            else -> Color(0xFFA9A9A9)
+        },
+        animationSpec = tween(durationMillis = 500), label = "bgColorAnim"
     )
 
-    // 진동 효과 추가
     LaunchedEffect(distance) {
-        if (distance <= 20f) {
-            vibrator?.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
+        if (distance > 0f && distance <= 20f) {
+            vibrator?.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
         }
     }
 
-    // 애니메이션 관련 변수
-    val animatedOffsetY by animateFloatAsState(
-        targetValue = if (isVisible) 0f else -100f, // 위에서 내려오는 애니메이션
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-    )
-
-    // 애니메이션 관련 변수
-    val animatedScale by animateFloatAsState(
-        targetValue = if (isVisible) 1.0f else 0.5f, // 작게 시작해서 점점 커짐
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-    )
-
-    Box(
-        contentAlignment = Alignment.TopCenter // 화면 상단에 배치
+    // AnimatedVisibility handles the enter/exit for the whole popup
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = slideInVertically(
+            initialOffsetY = { -it },
+            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+        ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+        exit = slideOutVertically(
+            targetOffsetY = { -it },
+            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+        ) + fadeOut(animationSpec = tween(durationMillis = 300))
     ) {
-        AnimatedVisibility(
-            visible = isVisible,
-            enter = slideInVertically(initialOffsetY = { -200 }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { -200 }) + fadeOut()
+        Box( // This Box is now inside AnimatedVisibility to ensure it's part of the animation
+            modifier = Modifier
+                .fillMaxSize() // Fill the space made available by AnimatedVisibility
+                .zIndex(10f),
+            contentAlignment = Alignment.TopCenter
         ) {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(1f) // 다이나믹 아일랜드 크기에서 시작
-                    .height(170.dp)
-                    .scale(animatedScale)
-                    .offset(y = animatedOffsetY.dp)
-                    .padding(30.dp),
-                shape = MaterialTheme.shapes.large,
+                    .fillMaxWidth(0.95f)
+                    .padding(top = 40.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
+                shape = MaterialTheme.shapes.extraLarge,
                 colors = CardDefaults.cardColors(containerColor = backgroundColor),
-                elevation = CardDefaults.cardElevation(8.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize()
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // 닫기 버튼 추가
                     IconButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(4.dp)
-                            .size(24.dp)
-                            .zIndex(1f)
+                        onClick = {
+                            viewModel.stopUwb()
+                            onDismissRequest()
+                        },
+                        modifier = Modifier.align(Alignment.Start).size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "닫기",
                             tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
 
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ){
-                            DirectionArrow(angle) // 왼쪽 화살표
-
-                            DistanceMeter(distance)
-
-                            Column ()
-                            {
-
-                                Row(){
-
-                                    Column {
-
-                                        Button(
-                                            onClick = {
-                                                coroutineScope.launch {
-                                                    viewModel.startUwb(address,channel)
-
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = Color.Red
-                                            ),
-                                            border = BorderStroke(1.dp, Color.Red)
-                                        ) {
-                                            Text("확인")
-                                        }
-
-                                        ControllerSwitch(viewModel)
-
-
-
-                                    }
-
-                                    Column {
-
-                                        TextField(
-                                            value = address,
-                                            onValueChange = { address = it }
-                                        )
-
-                                        TextField(
-                                            value = channel,
-                                            onValueChange = { channel = it }
-                                        )
-
-                                    }
-                                }
-
-                            }
-
-
-
-                        }
-
-
-
-                        }
-
-
-
+                        DirectionArrow(angle)
+                        DistanceMeter(distance)
                     }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        text = "My Role: ${if (isControllerRole) "Controller" else "Controlee"}", // Use the corrected state
+                        color = Color.White, fontSize = 13.sp,
+                        modifier = Modifier.padding(bottom = 2.dp)
+                    )
+                    Text(
+                        text = "My Addr: $localAddress",
+                        color = Color.White, fontSize = 13.sp,
+                        modifier = Modifier.padding(bottom = 2.dp)
+                    )
+                    Text(
+                        text = "My Ch: $localChannel / Preamble: $localPreamble",
+                        color = Color.White, fontSize = 13.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    val peerChannelLabel = if (isControllerRole) "Peer Channel" else "My Listen Ch" // Use the corrected state
+                    val peerPreambleLabel = if (isControllerRole) "Peer Preamble" else "My Listen Preamble" // Use the corrected state
+
+                    OutlinedTextField(
+                        value = peerAddressInput,
+                        onValueChange = { peerAddressInput = it },
+                        label = { Text("Peer Address", color = Color.White.copy(alpha = 0.7f)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    )
+                    Row(Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = configChannelInput,
+                            onValueChange = { configChannelInput = it },
+                            label = { Text(peerChannelLabel, color = Color.White.copy(alpha = 0.7f)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = configPreambleInput,
+                            onValueChange = { configPreambleInput = it },
+                            label = { Text(peerPreambleLabel, color = Color.White.copy(alpha = 0.7f)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    viewModel.startUwb(peerAddressInput, configChannelInput, configPreambleInput)
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White.copy(alpha = 0.9f),
+                                contentColor = Color.DarkGray
+                            ),
+                            border = BorderStroke(1.dp, Color.White)
+                        ) {
+                            Text("연결 시작")
+                        }
+                        ControllerSwitch(viewModel) // Pass the whole viewModel
+                    }
+                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
-    }
-
-
-
-@Composable
-fun ControllerSwitch(viewModel: UwbLocationViewModel) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Switch(
-            checked = viewModel.isController,
-            onCheckedChange = { isChecked ->
-                viewModel.setControllerState(isChecked)
-
-            }
-        )
     }
 }
 
 
 
 @Composable
+fun ControllerSwitch(viewModel: UwbLocationViewModel) { // Pass viewModel
+    // Directly use viewModel.isController for the checked state
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("Controller", color = Color.White, fontSize = 14.sp)
+        Spacer(Modifier.width(8.dp))
+        Switch(
+            checked = viewModel.isController, // Corrected: Direct use
+            onCheckedChange = { viewModel.setControllerState(it) },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
+    }
+}
+
+// Removed the problematic UwbLocationViewModel.isControllerState() extension function
+
+@Composable
 fun DirectionArrow(angle: Float) {
     val animatedAngle by animateFloatAsState(
         targetValue = angle,
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
         label = "angleAnimation"
     )
     val arrowPainter = painterResource(id = R.drawable.arrow2)
@@ -219,7 +244,7 @@ fun DirectionArrow(angle: Float) {
         painter = arrowPainter,
         contentDescription = "Direction Arrow",
         modifier = Modifier
-            .size(100.dp)
+            .size(70.dp)
             .rotate(animatedAngle),
         tint = Color.White
     )
@@ -228,23 +253,25 @@ fun DirectionArrow(angle: Float) {
 @Composable
 fun DistanceMeter(distance: Float) {
     Text(
-        text = String.format("%.1f m", distance),
-        fontSize = 18.sp,
-        color = Color.White
+        text = if (distance != 0f) String.format("%.1f m", distance) else "--.- m", // Check if not exactly 0
+        fontSize = 28.sp,
+        color = Color.White,
+        style = MaterialTheme.typography.headlineMedium
     )
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
 @Composable
 fun UwbPrecisionLocationPopupPreview() {
     val context = LocalContext.current
-    val uwbService = remember { uwbService(context) }
-    val viewModel = remember { UwbLocationViewModel(uwbService) }
+    val mockUwbService = remember { uwbService(context) }
+    val viewModel = remember { UwbLocationViewModel(mockUwbService) }
 
-    UwbPrecisionLocationPopup(
-        isVisible = true,
-        onDismissRequest = {},
-        viewModel = viewModel
-    )
+    Box(Modifier.fillMaxSize()) {
+        UwbPrecisionLocationPopup(
+            isVisible = true,
+            onDismissRequest = {},
+            viewModel = viewModel
+        )
+    }
 }
-

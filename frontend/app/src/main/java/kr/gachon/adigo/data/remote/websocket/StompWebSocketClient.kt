@@ -9,8 +9,11 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kr.gachon.adigo.AdigoApplication
@@ -37,8 +40,12 @@ class StompWebSocketClient(
     private val defaultDestinations = listOf("/user/queue/friendsLocationResponse")
 
     private var webSocket: WebSocket? = null
-    var stompConnected = false
-        private set
+
+
+    private val _stompConnected = MutableStateFlow(false)
+    val stompConnected: StateFlow<Boolean> = _stompConnected.asStateFlow()
+
+
     private var connectionJob: Job? = null
 
     // Flow to emit received STOMP messages (destination, body)
@@ -77,13 +84,13 @@ class StompWebSocketClient(
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             Log.d(TAG, "WebSocket closing: $code / $reason")
-            stompConnected = false
+            _stompConnected.value = false
             this@StompWebSocketClient.webSocket = null
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
             Log.d(TAG, "WebSocket closed: $code / $reason")
-            stompConnected = false
+            _stompConnected.value = false
             // Attempt to reconnect after a delay
             startReconnecting()
         }
@@ -95,7 +102,7 @@ class StompWebSocketClient(
                 Log.e(TAG, "Detected SocketException. Resetting WebSocket object.")
             }
 
-            stompConnected = false
+            _stompConnected.value = false
             this@StompWebSocketClient.webSocket = null // <- 여기가 핵심
             startReconnecting()
         }
@@ -139,7 +146,7 @@ class StompWebSocketClient(
 
         when (command) {
             "CONNECTED" -> {
-                stompConnected = true
+                _stompConnected.value = true
                 Log.i(TAG, "STOMP CONNECTED. Session: ${headers["session"]}")
                 defaultDestinations.forEach { dest ->
                     if(!subscriptions.contains(dest)){
@@ -194,7 +201,7 @@ class StompWebSocketClient(
             var delayTime = 1000L // Start with 1 second delay
             val maxDelay = 30000L // Maximum 30 seconds delay
 
-            while (isActive && !stompConnected) {
+            while (isActive && !stompConnected.value) {
                 Log.d(TAG, "Attempting to reconnect in ${delayTime / 1000} seconds...")
                 delay(delayTime)
                 connect() // Attempt to connect
@@ -219,7 +226,7 @@ class StompWebSocketClient(
     fun connect() {
         if (webSocket != null) {
             Log.d(TAG, "WebSocket client already exists.")
-            if (!stompConnected) {
+            if (!stompConnected.value) {
                 startReconnecting()
             }
             return
@@ -244,7 +251,7 @@ class StompWebSocketClient(
     fun disconnect() {
         Log.d(TAG, "Disconnecting STOMP client")
         connectionJob?.cancel() // Cancel reconnection job
-        stompConnected = false
+        _stompConnected.value = false
 
         val disconnectFrame = "DISCONNECT\n\n\u0000"
         webSocket?.send(disconnectFrame) // Send STOMP DISCONNECT frame
@@ -264,7 +271,7 @@ class StompWebSocketClient(
         val subscriptionId = UUID.randomUUID().toString()
         subscriptions[destination] = subscriptionId
 
-        if (stompConnected) {
+        if (stompConnected.value) {
             val subscribeFrame = buildString {
                 append("SUBSCRIBE\n")
                 append("id:$subscriptionId\n")
@@ -284,7 +291,7 @@ class StompWebSocketClient(
     fun unsubscribe(destination: String) {
         val subscriptionId = subscriptions.remove(destination)
         if (subscriptionId != null) {
-            if (stompConnected) {
+            if (stompConnected.value) {
                 val unsubscribeFrame = buildString {
                     append("UNSUBSCRIBE\n")
                     append("id:$subscriptionId\n")
@@ -302,7 +309,7 @@ class StompWebSocketClient(
     }
 
     fun send(destination: String, body: String, contentType: String = "application/json") {
-        if (!stompConnected) {
+        if (!stompConnected.value) {
             Log.w(TAG, "STOMP not connected, cannot send message to $destination")
             return
         }
@@ -345,7 +352,7 @@ class StompWebSocketClient(
     // ▶ 재연결 : 기존 웹소켓을 닫고 새로 connect()
     // ──────────────────────────────────────────────
     private fun reconnectWithNewToken() {
-        stompConnected = false
+        _stompConnected.value = false
         webSocket?.close(1000, "refresh token done")
         webSocket = null
         connect()          // → 내부에서 sendConnectFrame()을 호출하며
