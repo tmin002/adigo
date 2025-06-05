@@ -19,15 +19,14 @@ import androidx.compose.runtime.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ArrowUpward
 import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.data.model.dto.FriendshipRequestLookupDto
 import android.util.Log
 import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
-import kr.gachon.adigo.data.remote.websocket.StompWebSocketClient
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -50,6 +49,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.draw.rotate
+import kr.gachon.adigo.data.local.repository.FriendLocationInfo
+import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
 
 
 // ===============================
@@ -528,6 +530,8 @@ fun FriendsBottomSheetContent(
     val friendRequests by friendlistviewModel.friendRequests.collectAsState(emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
     val friendLocations by AdigoApplication.AppContainer.userLocationRepo.friends.collectAsState(emptyList())
+    val friendLocationViewModel = remember { FriendLocationViewModel(AdigoApplication.AppContainer.userLocationRepo) }
+    val friendsWithDistance by friendLocationViewModel.friendsWithDistance.collectAsState()
     val myPageViewModel = remember { MyPageViewModel(AdigoApplication.AppContainer.userDatabaseRepo) }
 
     LaunchedEffect(Unit) {
@@ -576,10 +580,12 @@ fun FriendsBottomSheetContent(
                 )
                 LazyColumn {
                     items(friends) { user ->
+                        val friendLocationInfo = friendsWithDistance.find { it.id == user.id }
                         FriendListItem(
                             user = user,
                             onClick = { onSelectFriend(user) },
-                            onDelete = { friendlistviewModel.deleteFriend(user) }
+                            onDelete = { friendlistviewModel.deleteFriend(user) },
+                            friendLocationInfo = friendLocationInfo
                         )
                     }
                 }
@@ -738,7 +744,8 @@ fun Header(onAddFriendClick: () -> Unit) {
 fun FriendListItem(
     user: UserEntity,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    friendLocationInfo: FriendLocationInfo? = null
 ) {
     Row(
         modifier = Modifier
@@ -785,6 +792,36 @@ fun FriendListItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = if (user.isOnline) Color(0xFF4CAF50) else Color.Gray
             )
+        }
+
+        // 거리와 방향 정보
+        friendLocationInfo?.let { info ->
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                // 거리 표시
+                Text(
+                    text = when {
+                        info.distance < 1000 -> "${info.distance.toInt()}m"
+                        else -> String.format("%.1fkm", info.distance / 1000)
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                
+                // 방향 화살표
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .rotate(info.bearing.toFloat())
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowUpward,
+                        contentDescription = "방향",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
     }
 }

@@ -58,6 +58,8 @@ dependencies {
     // ───────── Passkey (Credential Manager) ─────────
     implementation(libs.androidx.credentials)
 
+    // Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended:1.6.3")
 
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))//
     // 지도 컴포즈 통합 라이브러리 (Google Maps Compose)
