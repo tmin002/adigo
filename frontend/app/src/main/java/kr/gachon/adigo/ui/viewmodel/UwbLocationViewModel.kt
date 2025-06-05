@@ -23,29 +23,28 @@ class UwbLocationViewModel(
     val localUwbChannel: StateFlow<String> = uwbService.localUwbChannelFlow
     val localUwbPreambleIndex: StateFlow<String> = uwbService.localUwbPreambleIndexFlow
 
+    // Expose ranging status
+    val isRangingActive: StateFlow<Boolean> = uwbService.isRangingActiveFlow
+
     var isController by mutableStateOf(true)
         private set
 
-    // Default values for UWB parameters
     companion object {
         const val DEFAULT_PEER_ADDRESS = 1234
-        const val DEFAULT_CONFIG_CHANNEL = 9 // Common UWB channel
-        const val DEFAULT_CONFIG_PREAMBLE = 11 // Common UWB preamble index
+        const val DEFAULT_CONFIG_CHANNEL = 9
+        const val DEFAULT_CONFIG_PREAMBLE = 11
     }
 
     init {
-        setControllerState(isController) // Initialize with default role
+        setControllerState(isController)
     }
 
-    // peerAddressStr: Address of the other device.
-    // configChannelStr: If Controller, expected peer channel. If Controlee, own listening channel.
-    // configPreambleStr: If Controller, expected peer preamble. If Controlee, own listening preamble.
     fun startUwb(peerAddressStr: String, configChannelStr: String, configPreambleStr: String) {
         val peerAddr = peerAddressStr.toIntOrNull() ?: DEFAULT_PEER_ADDRESS
         val configChan = configChannelStr.toIntOrNull() ?: DEFAULT_CONFIG_CHANNEL
         val configPreamble = configPreambleStr.toIntOrNull() ?: DEFAULT_CONFIG_PREAMBLE
 
-        viewModelScope.launch(Dispatchers.IO) { // Perform service calls on IO dispatcher
+        viewModelScope.launch(Dispatchers.IO) {
             uwbService.startRanging(peerAddr, configChan, configPreamble)
         }
     }
@@ -59,9 +58,9 @@ class UwbLocationViewModel(
     fun setControllerState(newControllerState: Boolean) {
         if (this.isController != newControllerState || localUwbAddress.value == "N/A" || localUwbAddress.value == "Error") {
             this.isController = newControllerState
-            stopUwb() // Stop any previous ranging
+            stopUwb()
 
-            viewModelScope.launch { // setRoleAsync handles its own thread
+            viewModelScope.launch {
                 suspendCancellableCoroutine<Unit> { continuation ->
                     uwbService.setRoleAsync(newControllerState) {
                         if (continuation.isActive) {
@@ -69,7 +68,7 @@ class UwbLocationViewModel(
                         }
                     }
                     continuation.invokeOnCancellation {
-                        // Handle cancellation if needed, e.g., log
+                        // Handle cancellation
                     }
                 }
             }
