@@ -25,6 +25,9 @@ import kotlinx.coroutines.launch
 import kr.gachon.adigo.R
 import kr.gachon.adigo.service.uwbService
 import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.zIndex
 
 @Composable
 fun UwbPrecisionLocationPopup(
@@ -94,72 +97,94 @@ fun UwbPrecisionLocationPopup(
                 colors = CardDefaults.cardColors(containerColor = backgroundColor),
                 elevation = CardDefaults.cardElevation(8.dp)
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Box(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ){
-                        DirectionArrow(angle) // 왼쪽 화살표
+                    // 닫기 버튼 추가
+                    IconButton(
+                        onClick = onDismissRequest,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(4.dp)
+                            .size(24.dp)
+                            .zIndex(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "닫기",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
 
-                        DistanceMeter(distance)
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ){
+                            DirectionArrow(angle) // 왼쪽 화살표
 
-                        Column ()
-                        {
+                            DistanceMeter(distance)
 
-                            Row(){
+                            Column ()
+                            {
 
-                                Column {
+                                Row(){
 
-                                    Button(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                viewModel.startUwb(address,channel)
+                                    Column {
 
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color.Red
-                                        ),
-                                        border = BorderStroke(1.dp, Color.Red)
-                                    ) {
-                                        Text("확인")
+                                        Button(
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    viewModel.startUwb(address,channel)
+
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = Color.Red
+                                            ),
+                                            border = BorderStroke(1.dp, Color.Red)
+                                        ) {
+                                            Text("확인")
+                                        }
+
+                                        ControllerSwitch(viewModel)
+
+
+
                                     }
 
-                                    ControllerSwitch(viewModel)
+                                    Column {
 
+                                        TextField(
+                                            value = address,
+                                            onValueChange = { address = it }
+                                        )
 
+                                        TextField(
+                                            value = channel,
+                                            onValueChange = { channel = it }
+                                        )
 
+                                    }
                                 }
 
-                                Column {
-
-                                    TextField(
-                                        value = address,
-                                        onValueChange = { address = it }
-                                    )
-
-                                    TextField(
-                                        value = channel,
-                                        onValueChange = { channel = it }
-                                    )
-
-                                }
                             }
+
+
+
+                        }
+
+
 
                         }
 
 
 
                     }
-
-
-
-                    }
-
-
-
                 }
             }
         }
