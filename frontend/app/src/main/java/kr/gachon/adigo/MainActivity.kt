@@ -40,9 +40,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.messaging.FirebaseMessaging
 import kr.gachon.adigo.background.UserLocationProviderService
-import kr.gachon.adigo.service.uwbService
 import kr.gachon.adigo.ui.components.PermissionGate
-import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
 import kr.gachon.adigo.ui.screen.EmailInputScreen
 import kr.gachon.adigo.ui.screen.FinalSignUpScreen
 import kr.gachon.adigo.ui.screen.Screens
@@ -51,13 +49,11 @@ import kr.gachon.adigo.ui.screen.map.MapScreen
 import kr.gachon.adigo.ui.theme.AdigoTheme
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.EmailViewModel
-import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
 import androidx.compose.ui.graphics.Color
 
 class MainActivity : ComponentActivity() {
 
     private val authVm: AuthViewModel by viewModels()
-    private lateinit var uwbVm : UwbLocationViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,14 +69,11 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        uwbVm  = UwbLocationViewModel(uwbService(this))
-
         setContent {
             AdigoTheme {
                 PermissionGate {
                     MainNavHost(
-                        authVm = authVm,
-                        uwbVm  = uwbVm
+                        authVm = authVm
                     )
                 }
             }
@@ -89,8 +82,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun MainNavHost(
-        authVm: AuthViewModel,
-        uwbVm: UwbLocationViewModel
+        authVm: AuthViewModel
     ) {
         val isLoggedIn by authVm.isLoggedIn.collectAsState()
         val navController = rememberNavController()
@@ -118,8 +110,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
-
         NavHost(
             navController = navController,
             startDestination = startDest
@@ -127,7 +117,7 @@ class MainActivity : ComponentActivity() {
 
             /* ────────────── 온보딩 ────────────── */
             composable(route = Screens.OnBoard.name) {
-                OnBoardScreen(navController = navController, uwbVm = uwbVm)
+                OnBoardScreen(navController = navController)
             }
 
             /* ────────────── 이메일 입력 / 로그인 ────────────── */
@@ -189,9 +179,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     @Composable
-    fun OnBoardScreen(navController: NavController, uwbVm: UwbLocationViewModel) {
+    fun OnBoardScreen(navController: NavController) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -247,17 +236,8 @@ class MainActivity : ComponentActivity() {
             }
             
             Spacer(modifier = Modifier.weight(1f))
-            
-            // 테스트용 UWB 팝업 (투명하게 유지)
-            UwbPrecisionLocationPopup(
-                isVisible = true,
-                onDismissRequest = {},
-                viewModel = uwbVm
-            )
         }
     }
-
-
 }
 
 

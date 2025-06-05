@@ -39,12 +39,14 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.*
-import kr.adigo.adigo.database.entity.UserEntity
 import kr.gachon.adigo.AdigoApplication
 import kr.gachon.adigo.background.UserLocationProviderService
 import kr.gachon.adigo.ui.screen.Screens
 import kr.gachon.adigo.ui.viewmodel.AuthViewModel
 import kr.gachon.adigo.ui.viewmodel.FriendLocationViewModel
+import kr.gachon.adigo.ui.components.UwbPrecisionLocationPopup
+import kr.gachon.adigo.ui.viewmodel.UwbLocationViewModel
+import kr.gachon.adigo.service.uwbService
 import java.io.IOException
 import java.net.URLEncoder
 import java.util.Locale
@@ -55,6 +57,7 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     // ---------- State ----------
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
     var isTracking by remember { mutableStateOf(false) }
+    var showUwbPopup by remember { mutableStateOf(false) }
 
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberStandardBottomSheetState(
@@ -66,8 +69,6 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
         )
     )
     val scope = rememberCoroutineScope()
-
-
 
     val friendLocationViewModel = remember {
         FriendLocationViewModel(AdigoApplication.AppContainer.userLocationRepo)
@@ -184,6 +185,10 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
     // ---------- Image cache ----------
     val profileImageCache = remember { mutableStateMapOf<Long, BitmapDescriptor>() }
 
+    val uwbVm = remember {
+        UwbLocationViewModel(uwbService(context))
+    }
+
     // ---------- UI ----------
     Box(modifier = Modifier.fillMaxSize()) {
         BottomSheetScaffold(
@@ -265,13 +270,27 @@ fun MapScreen(authViewModel: AuthViewModel, navController: NavController) {
                     .padding(innerPadding),
                 contentAlignment = Alignment.TopCenter
             ) {
-                Button(
-                    onClick = { navController.navigate("websocket_test") },
+                if (!showUwbPopup) {
+                    Button(
+                        onClick = { showUwbPopup = true },
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .zIndex(2f),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) { Text("어디고") }
+                }
+
+                Box(
                     modifier = Modifier
-                        .padding(16.dp)
-                        .zIndex(2f),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) { Text("WebSocket 테스트") }
+                        .fillMaxSize()
+                        .zIndex(3f)
+                ) {
+                    UwbPrecisionLocationPopup(
+                        isVisible = showUwbPopup,
+                        onDismissRequest = { showUwbPopup = false },
+                        viewModel = uwbVm
+                    )
+                }
 
                 Box(modifier = Modifier.fillMaxSize().zIndex(1f)) {
                     GoogleMap(
