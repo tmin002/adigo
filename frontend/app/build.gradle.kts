@@ -8,9 +8,9 @@ plugins {
 
 // 버전 관리 변수
 val majorVersion = 1
-val minorVersion = 5
+val minorVersion = 6
 val patchVersion = 3
-val buildNumber = 8
+val buildNumber = 9
 
 android {
     namespace = "kr.gachon.adigo"
@@ -58,6 +58,8 @@ dependencies {
     // ───────── Passkey (Credential Manager) ─────────
     implementation(libs.androidx.credentials)
 
+    // Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended:1.6.3")
 
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))//
     // 지도 컴포즈 통합 라이브러리 (Google Maps Compose)
