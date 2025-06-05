@@ -123,8 +123,11 @@ dependencies {
 
 
 
+
+
     // 추가 AndroidX 라이브러리들
     implementation(libs.androidx.core.ktx)
+    implementation(libs.google.services.auth)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
