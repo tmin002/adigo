@@ -296,22 +296,3 @@ fun DistanceMeter(distance: Float) {
     )
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
-@Composable
-fun UwbPrecisionLocationPopupPreview() {
-    val context = LocalContext.current
-    // In a real app, FlowProvider would be your kr.gachon.adigo.util.FlowUtils
-    // For preview, we might need a mock FlowProvider if it's not available in this context
-    // or ensure the uwbService can be instantiated without it crashing for preview.
-    // For simplicity, assuming uwbService can be created.
-    val mockUwbService = remember { uwbService(context) }
-    val viewModel = remember { UwbLocationViewModel(mockUwbService) }
-
-    Box(Modifier.fillMaxSize()) {
-        UwbPrecisionLocationPopup(
-            isVisible = true,
-            onDismissRequest = {},
-            viewModel = viewModel
-        )
-    }
-}

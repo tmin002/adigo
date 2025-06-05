@@ -54,10 +54,10 @@ public class uwbService {
         this.isController = controller;
         Log.d(TAG, "Setting role: " + (controller ? "Controller" : "Controlee"));
 
-        if (!controller) {
-            localUwbChannelFlow.setValue("N/A");
-            localUwbPreambleIndexFlow.setValue("N/A");
-        }
+//        if (!controller) {
+//            localUwbChannelFlow.setValue("N/A");
+//            localUwbPreambleIndexFlow.setValue("N/A");
+//        }
 
         try {
             UwbClientSessionScope scope = controller
