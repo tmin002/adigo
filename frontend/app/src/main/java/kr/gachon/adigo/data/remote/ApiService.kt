@@ -33,4 +33,7 @@ interface ApiService {
     @POST("auth/reissue")
     suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<LoginResponse>
 
+    @POST("push/token/register")
+    suspend fun registerDeviceToken(@Body request: newPushTokenDto): Response<newPushTokenResponseDto>
+
 }

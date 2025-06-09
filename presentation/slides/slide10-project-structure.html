@@ -1,0 +1,174 @@
+<div id="slide10" class="slide-container">
+  <div class="slide-content">
+    <div class="w-1/2 p-16 flex flex-col justify-center">
+      <h1 class="text-4xl font-bold mb-8 fade-in">
+        <span class="accent-blue">Project</span> Architecture
+      </h1>
+      <p class="text-xl mb-8 text-gray-600 fade-in delay-100">
+        Detailed system architecture and data flow
+      </p>
+      <div class="space-y-6">
+        <div class="flex items-start fade-in delay-200">
+          <span class="blue-dot mt-2"></span>
+          <div>
+            <h3 class="text-lg font-semibold accent-blue">Authentication/Authorization</h3>
+            <p class="text-gray-600">JWT-based authentication, no session required. Token needed for all authorized HTTP requests.</p>
+          </div>
+        </div>
+        <div class="flex items-start fade-in delay-300">
+          <span class="blue-dot mt-2"></span>
+          <div>
+            <h3 class="text-lg font-semibold accent-blue">Real-time Location Update</h3>
+            <p class="text-gray-600">Android app sends location every 5 seconds via WebSocket. Connection established on app login.</p>
+          </div>
+        </div>
+        <div class="flex items-start fade-in delay-400">
+          <span class="blue-dot mt-2"></span>
+          <div>
+            <h3 class="text-lg font-semibold accent-blue">Friend Request/Response</h3>
+            <p class="text-gray-600">Friend requests trigger notifications. Users can accept or reject incoming requests.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="w-1/2 p-8 flex items-center justify-center">
+      <div class="bg-white rounded-lg shadow-xl p-3 w-full max-w-5xl fade-in overflow-y-auto max-h-[85vh]">
+        <h2 class="text-base font-bold text-center mb-2 accent-blue">Detailed System Architecture</h2>
+        
+        <!-- Complete Architecture Diagram -->
+        <div class="space-y-2 text-xs">
+          
+          <!-- Development & Deployment Layer -->
+          <div class="flex justify-center mb-2">
+            <div class="bg-gray-100 border-2 border-gray-300 rounded-lg p-1 text-center w-48">
+              <div class="flex items-center justify-center mb-1">
+                <i class="fab fa-github text-sm mr-1"></i>
+                <strong class="text-xs">GitHub</strong>
+              </div>
+              <div class="text-xs">CI/CD Pipeline</div>
+              <div class="text-xs">Version Control & Deployment</div>
+            </div>
+          </div>
+
+          <!-- Arrows to Server Infrastructure -->
+          <div class="text-center text-gray-500 text-xs">
+            <i class="fas fa-arrow-down"></i> Deployment Flow <i class="fas fa-arrow-down"></i>
+          </div>
+
+          <!-- Server Infrastructure (Main Container) -->
+          <div class="bg-gray-200 border-4 border-gray-400 rounded-lg p-2 relative">
+            <h3 class="font-bold text-center mb-2 text-gray-800 text-sm">🖥️ Server Infrastructure</h3>
+            
+            <div class="grid grid-cols-3 gap-1 mb-2">
+              <!-- NGINX Load Balancer -->
+              <div class="bg-green-200 border-2 border-green-400 rounded p-1">
+                <div class="font-bold text-center mb-1 text-xs">
+                  <i class="fas fa-server mr-1"></i>NGINX
+                </div>
+                <div class="text-xs space-y-1">
+                  <div>• Reverse Proxy</div>
+                  <div>• Load Balancer</div>
+                  <div>• SSL/Port 80/443</div>
+                </div>
+              </div>
+
+              <!-- Spring Boot Application -->
+              <div class="bg-blue-200 border-2 border-blue-400 rounded p-1">
+                <div class="font-bold text-center mb-1 text-xs">
+                  <i class="fas fa-leaf mr-1"></i>Spring Boot
+                </div>
+                <div class="text-xs space-y-1">
+                  <div>• REST API Server</div>
+                  <div>• JWT Authentication</div>
+                  <div>• WebSocket Handler</div>
+                </div>
+              </div>
+
+              <!-- Redis Cache -->
+              <div class="bg-red-200 border-2 border-red-400 rounded p-1">
+                <div class="font-bold text-center mb-1 text-xs">
+                  <i class="fas fa-bolt mr-1"></i>Redis
+                </div>
+                <div class="text-xs space-y-1">
+                  <div>• Real-time Location</div>
+                  <div>• Session Data</div>
+                  <div>• WebSocket Sessions</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Internal Connections -->
+            <div class="text-center text-xs text-gray-600 mb-1">
+              ↔️ Internal Communication (Port 8080) ↔️
+            </div>
+          </div>
+
+          <!-- External Services Row -->
+          <div class="grid grid-cols-3 gap-1 mt-2">
+            <!-- CloudFlare -->
+            <div class="bg-orange-100 border-2 border-orange-300 rounded-lg p-1">
+              <div class="font-bold text-center mb-1 text-xs">
+                <i class="fas fa-cloud mr-1"></i>CloudFlare
+              </div>
+              <div class="text-xs space-y-1">
+                <div>• DDOS Protection</div>
+                <div>• SSL/TLS & CDN</div>
+              </div>
+            </div>
+
+            <!-- MySQL Database -->
+            <div class="bg-blue-100 border-2 border-blue-300 rounded-lg p-1">
+              <div class="font-bold text-center mb-1 text-xs">
+                <i class="fas fa-database mr-1"></i>MySQL
+              </div>
+              <div class="text-xs space-y-1">
+                <div>• User Accounts</div>
+                <div>• Friend Relationships</div>
+              </div>
+            </div>
+
+            <!-- Firebase -->
+            <div class="bg-yellow-100 border-2 border-yellow-300 rounded-lg p-1">
+              <div class="font-bold text-center mb-1 text-xs">
+                <i class="fas fa-fire mr-1"></i>Firebase
+              </div>
+              <div class="text-xs space-y-1">
+                <div>• Push Notifications</div>
+                <div>• Friend Requests</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile Client -->
+          <div class="mt-2 flex justify-center">
+            <div class="bg-green-100 border-2 border-green-400 rounded-lg p-2 w-60">
+              <div class="font-bold text-center mb-1 text-xs">
+                <i class="fas fa-mobile-alt mr-1"></i>📱 Android Client
+              </div>
+              <div class="text-xs space-y-1">
+                <div><strong>Auth:</strong> JWT token for all authorized requests</div>
+                <div><strong>Location:</strong> Send every 5 seconds via WebSocket</div>
+                <div><strong>Friends:</strong> Send/receive requests with notifications</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Data Flow Arrows -->
+          <div class="mt-2 bg-purple-50 border border-purple-200 rounded-lg p-2">
+            <h3 class="font-bold text-purple-800 text-center mb-1 text-xs">🔄 Critical Data Flows</h3>
+            <div class="text-xs text-purple-700 space-y-1">
+              <div><strong>🔐 Auth:</strong> Android → NGINX → Spring Boot → JWT Token</div>
+              <div><strong>📍 Location:</strong> Android → WebSocket (5sec) → Redis → Clients</div>
+              <div><strong>👥 Friends:</strong> User A → API → MySQL → Firebase → User B</div>
+              <div><strong>🌐 Traffic:</strong> Internet → CloudFlare → NGINX → Spring Boot</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    
+    <div class="slide-decoration"></div>
+  </div>
+</div> 

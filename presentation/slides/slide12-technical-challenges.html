@@ -1,0 +1,95 @@
+<div id="slide12" class="slide-container">
+  <div class="slide-content">
+    <div class="w-1/2 p-16 flex flex-col justify-center">
+      <h1 class="text-4xl font-bold mb-8 fade-in">
+        <span class="accent-blue">What We</span> Learned
+      </h1>
+      <p class="text-xl mb-8 text-gray-600 fade-in delay-100">
+        Key insights from development challenges
+      </p>
+      
+      <!-- UWB Implementation -->
+      <div class="mb-6">
+        <div class="fade-in delay-200">
+          <h3 class="text-lg font-semibold accent-blue mb-2">1. UWB Implementation Challenges</h3>
+          <p class="text-sm text-gray-600 mb-2">
+            <strong>Original Plan:</strong> Precise location sharing using UWB technology for crowded places.
+          </p>
+          <p class="text-sm text-gray-600 mb-2">
+            <strong>Key Obstacle:</strong> UWB devices need ID handshake via Bluetooth, but heavy interference in crowded areas prevented proper connection.
+          </p>
+          <p class="text-sm text-gray-600">
+            <strong>Decision:</strong> Considered WebSocket-based key sharing but too many edge cases. Focused on core features instead.
+          </p>
+        </div>
+      </div>
+      
+      <!-- Importance of Planning -->
+      <div class="mb-6">
+        <div class="fade-in delay-300">
+          <h3 class="text-lg font-semibold accent-blue mb-2">2. Planning is Critical</h3>
+          <p class="text-sm text-gray-600 mb-2">
+            <strong>Issue:</strong> Started without coding conventions or API definitions.
+          </p>
+          <p class="text-sm text-gray-600">
+            <strong>Result:</strong> As the service scaled, error handling became difficult and code structure became unclear.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="w-1/2 p-16 flex flex-col justify-center">
+      <!-- Optimization Importance -->
+      <div class="mb-6">
+        <div class="fade-in delay-400">
+          <h3 class="text-lg font-semibold accent-blue mb-2">3. Optimization Matters</h3>
+          
+          <div class="mb-3">
+            <h4 class="font-semibold text-gray-700 mb-1">Battery Life</h4>
+            <p class="text-sm text-gray-600">
+              5-second location updates drained battery heavily. Fixed by sending only when device moves using motion sensor.
+            </p>
+          </div>
+          
+          <div class="mb-3">
+            <h4 class="font-semibold text-gray-700 mb-1">Smart Data Storage</h4>
+            <p class="text-sm text-gray-600">
+              Redis was perfect for location data - much more efficient than saving to disk.
+            </p>
+          </div>
+          
+          <div class="mb-4">
+            <h4 class="font-semibold text-gray-700 mb-1">Async Programming</h4>
+            <p class="text-sm text-gray-600">
+              Used RxJava for non-blocking operations. Defined clear exception types for easier error handling.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Future Plans Box -->
+      <div class="bg-white rounded-lg shadow-xl p-4 fade-in delay-700">
+        <h2 class="text-lg font-bold mb-3 accent-blue">🚀 Future Plans</h2>
+        
+        <div class="space-y-2">
+          <div class="p-2 border-l-4 border-blue-500 bg-blue-50">
+            <h4 class="font-semibold text-sm">Advanced Optimization</h4>
+            <p class="text-xs text-gray-600">Further improve location sharing beyond motion detection</p>
+          </div>
+          
+          <div class="p-2 border-l-4 border-green-500 bg-green-50">
+            <h4 class="font-semibold text-sm">Complete UWB Feature</h4>
+            <p class="text-xs text-gray-600">Implement WebSocket key sharing with proper edge case handling</p>
+          </div>
+          
+          <div class="p-2 border-l-4 border-purple-500 bg-purple-50">
+            <h4 class="font-semibold text-sm">Production Release</h4>
+            <p class="text-xs text-gray-600">Play Store deployment with privacy law compliance</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="slide-decoration"></div>
+  </div>
+</div> 

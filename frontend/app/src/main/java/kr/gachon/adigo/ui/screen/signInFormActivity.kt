@@ -291,6 +291,7 @@ fun EmailInputScreen(
                     authViewModel.sendLogin(
                         email, password,
                         onSuccess = {
+                            authViewModel.sendDeviceToken()
                             navController.navigate(Screens.Main.name)
                         },
                         onError = { errorMsg ->

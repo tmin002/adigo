@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     //alias(libs.plugins.kotlin.compose) apply false
     id("io.realm.kotlin") version "1.16.0" // 최신 버전 확인 필요
+
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 
