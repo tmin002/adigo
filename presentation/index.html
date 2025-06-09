@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adigo - Real-time Location Sharing Service</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      html {
+        scroll-behavior: smooth;
+        scroll-snap-type: y mandatory;
+      }
+      body {
+        font-family: 'Roboto', sans-serif;
+        color: #333;
+      }
+      .slide-container {
+        width: 100%;
+        height: 100vh;
+        scroll-snap-align: start;
+        overflow: hidden;
+        position: relative;
+      }
+      .slide-content {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        background: linear-gradient(to right, #ffffff 50%, #f5f8ff 50%);
+      }
+      .accent-blue {
+        color: #2196F3;
+      }
+      .accent-purple {
+        color: #7B1FA2;
+      }
+      .slide-decoration {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 8px;
+        background: linear-gradient(90deg, #2196F3 0%, #7B1FA2 100%);
+      }
+      .nav-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #ccc;
+        margin: 8px 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .nav-dot.active {
+        background-color: #2196F3;
+        transform: scale(1.2);
+      }
+      .nav-dot:hover {
+        background-color: #7B1FA2;
+      }
+      .progress-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #2196F3, #7B1FA2);
+        z-index: 1000;
+        transition: width 0.2s ease;
+      }
+      .blue-dot {
+        width: 12px;
+        height: 12px;
+        background-color: #2196F3;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 10px;
+      }
+      .screenshot {
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        max-width: 100%;
+        max-height: 80%;
+        object-fit: contain;
+      }
+      .code-block {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        color: #333;
+        overflow-x: auto;
+        border-left: 4px solid #2196F3;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .fade-in {
+        animation: fadeIn 0.5s ease forwards;
+      }
+      .delay-100 { animation-delay: 0.1s; }
+      .delay-200 { animation-delay: 0.2s; }
+      .delay-300 { animation-delay: 0.3s; }
+      .delay-400 { animation-delay: 0.4s; }
+      .team-member {
+        transition: all 0.3s ease;
+      }
+      .team-member:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progressBar"></div>
+    
+    <!-- Navigation dots -->
+    <div class="fixed right-8 top-1/2 transform -translate-y-1/2 z-50 flex flex-col items-center">
+      <a href="#slide1" class="nav-dot active" data-slide="1"></a>
+      <a href="#slide2" class="nav-dot" data-slide="2"></a>
+      <a href="#slide2-5" class="nav-dot" data-slide="2.5"></a>
+      <a href="#slide3" class="nav-dot" data-slide="3"></a>
+      <a href="#slide4" class="nav-dot" data-slide="4"></a>
+      <a href="#slide5" class="nav-dot" data-slide="5"></a>
+      <a href="#slide6" class="nav-dot" data-slide="6"></a>
+      <a href="#slide7" class="nav-dot" data-slide="7"></a>
+      <a href="#slide8" class="nav-dot" data-slide="8"></a>
+      <a href="#slide9" class="nav-dot" data-slide="9"></a>
+      <a href="#slide10" class="nav-dot" data-slide="10"></a>
+      <a href="#slide11" class="nav-dot" data-slide="11"></a>
+      <a href="#slide12" class="nav-dot" data-slide="12"></a>
+      <a href="#slide13" class="nav-dot" data-slide="13"></a>
+    </div>
+
+    <!-- Include slide files -->
+    <div id="slide1" class="slide-container">
+      <div class="slide-content">
+        <!-- Left content area -->
+        <div class="w-1/2 p-16 flex flex-col justify-center">
+          <h1 class="text-5xl font-bold mb-8 fade-in">Adigo</h1>
+          <h2 class="text-3xl font-semibold mb-6 accent-blue fade-in delay-100">Real-time Location Sharing Service</h2>
+          
+          <p class="text-xl mb-6 fade-in delay-200">
+            A mobile application that enables friends to share their real-time location
+          </p>
+          
+          <div class="fade-in delay-300">
+            <p class="text-lg">Gachon University Mobile Programming Term Project - Team A</p>
+          </div>
+        </div>
+        
+        <!-- Right content area -->
+        <div class="w-1/2 p-16 flex items-center justify-center">
+          <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md fade-in">
+            <h2 class="text-2xl font-bold text-center mb-6 accent-blue">Adigo Project</h2>
+            
+            <div class="flex justify-center mb-6">
+              <div class="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center">
+                <i class="fas fa-map-marker-alt text-4xl text-blue-500"></i>
+              </div>
+            </div>
+            
+            <div class="text-center mb-6">
+              <p class="text-lg font-semibold">Real-time Location Sharing Service</p>
+              <p class="text-sm text-gray-600 mt-2">Gachon University Mobile Programming</p>
+              <p class="text-sm text-gray-600">Team A</p>
+            </div>
+            
+            <div class="flex justify-around mt-8">
+              <div class="text-center">
+                <i class="fab fa-android text-2xl text-green-600"></i>
+                <p class="text-xs mt-1">Android</p>
+              </div>
+              <div class="text-center">
+                <i class="fab fa-java text-2xl text-orange-600"></i>
+                <p class="text-xs mt-1">Kotlin</p>
+              </div>
+              <div class="text-center">
+                <i class="fas fa-server text-2xl text-blue-600"></i>
+                <p class="text-xs mt-1">Spring</p>
+              </div>
+              <div class="text-center">
+                <i class="fas fa-database text-2xl text-red-600"></i>
+                <p class="text-xs mt-1">Redis</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Slide decoration -->
+        <div class="slide-decoration"></div>
+      </div>
+    </div>
+
+    <script>
+      // Load slide content dynamically
+      async function loadSlides() {
+        const slides = [
+          'slides/slide2-team.html',
+          'slides/slide2-5-demo.html',
+          'slides/slide3-auth.html',
+          'slides/slide4-map.html',
+          'slides/slide5-friends.html',
+          'slides/slide6-friend-detail.html',
+          'slides/slide7-mypage.html',
+          'slides/slide8-naver-map.html',
+          'slides/slide9-software-stack.html',
+          'slides/slide10-project-structure.html',
+          'slides/slide11-user-interface.html',
+          'slides/slide12-technical-challenges.html',
+          'slides/slide13-conclusion.html'
+        ];
+
+        for (let i = 0; i < slides.length; i++) {
+          try {
+            const response = await fetch(slides[i]);
+            const html = await response.text();
+            document.body.insertAdjacentHTML('beforeend', html);
+          } catch (error) {
+            console.error(`Error loading ${slides[i]}:`, error);
+          }
+        }
+
+        initializeNavigation();
+      }
+
+      function initializeNavigation() {
+        // Progress bar
+        const progressBar = document.getElementById('progressBar');
+        const slideContainers = document.querySelectorAll('.slide-container');
+        const navDots = document.querySelectorAll('.nav-dot');
+        const totalSlides = slideContainers.length;
+        
+        // Update progress and active dot on scroll
+        window.addEventListener('scroll', function() {
+          const scrollTop = window.scrollY;
+          const docHeight = document.body.offsetHeight;
+          const winHeight = window.innerHeight;
+          const scrollPercent = scrollTop / (docHeight - winHeight);
+          progressBar.style.width = scrollPercent * 100 + '%';
+          
+          // Update active dot
+          const currentSlideIndex = Math.round(scrollPercent * (totalSlides - 1));
+          navDots.forEach((dot, index) => {
+            if (index === currentSlideIndex) {
+              dot.classList.add('active');
+            } else {
+              dot.classList.remove('active');
+            }
+          });
+        });
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+          const currentSlideIndex = Array.from(navDots).findIndex(dot => dot.classList.contains('active'));
+          
+          if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+            if (currentSlideIndex < totalSlides - 1) {
+              document.querySelector(`[data-slide="${currentSlideIndex + 2}"]`).click();
+            }
+          } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            if (currentSlideIndex > 0) {
+              document.querySelector(`[data-slide="${currentSlideIndex}"]`).click();
+            }
+          }
+        });
+      }
+
+      // Load slides when page loads
+      document.addEventListener('DOMContentLoaded', loadSlides);
+    </script>
+</body>
+</html> 
